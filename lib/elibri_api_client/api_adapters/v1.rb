@@ -4,13 +4,13 @@ module Elibri
   class ApiClient
     module ApiAdapters
 
-      # Adapter dla 1 wersji API
+      # Adapter dla 1 wersji API. Instancję odpowiedniego adaptera tworzy klasa Elibri::ApiClient - nie
+      # robimy tego ręcznie.
       class V1
         URI_PREFIX = '/api/v1'
 
         include HTTParty
-        debug_output $stderr
-
+        #debug_output $stderr
 
         def initialize(host_uri, login, password)
           @host_uri = host_uri
@@ -78,6 +78,8 @@ module Elibri
         end
 
 
+        # Trawersuj kolekcję produktów w nazwanej kolejce. Instancję nazwanej kolejki należy przekazać
+        # jako argument metody.
         def each_product(queue, &block)
           raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Queue instance' unless queue.kind_of? Elibri::ApiClient::ApiAdapters::V1::Queue
 
@@ -91,7 +93,8 @@ module Elibri
         end
 
 
-        # Ostatnio utworzone nazwane kolejki. Gdy wysypie nam się aplikacja, można przeglądać ostatnie pickupy.
+        # Ostatnio utworzone nazwane kolejki. Gdy wysypie nam się aplikacja, można przeglądać ostatnie pickupy
+        # i ponownie pobierać z nich dane.
         def last_pickups
           last_pickups = []
           %w{meta stocks}.each do |queue_name|
@@ -146,6 +149,7 @@ module Elibri
           end
 
 
+          # Jeśli Elibri zwóci jakiś błąd, to rzucamy odpowiednim wyjątkiem.
           def raise_if_error_present_in(response)
             raise Unauthorized, 'Bad login or password' if response.code == 401
 

@@ -3,6 +3,8 @@
 module Elibri
   class ApiClient
     module ApiAdapters
+
+      # Adapter dla pierwszej wersji API.
       class V1
 
         class UnknownError < RuntimeError; end
@@ -33,7 +35,6 @@ module Elibri
 
         # Zamiast rzeźbić ciągle w XML`u, tworzymy instancje kolejek.
         class Queue
-
           attr_reader :name, :items_total, :picked_up_at, :last_insert_at, :queue_id, :url
 
           def initialize(api_adapter, attributes = {})
