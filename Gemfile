@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 
 gem "httparty", "~> 0.7.8"
-gem "nokogiri", "~> 1.4.6"
+gem "nokogiri", "~> 1.5.0"
 
 group :development do
   gem "ruby-debug"

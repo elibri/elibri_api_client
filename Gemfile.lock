@@ -14,7 +14,7 @@ GEM
       rbx-require-relative (> 0.0.4)
     minitest (2.2.2)
     mocha (0.9.12)
-    nokogiri (1.4.6)
+    nokogiri (1.5.0)
     rake (0.9.0)
     rbx-require-relative (0.0.5)
     rcov (0.9.9)
@@ -33,6 +33,6 @@ DEPENDENCIES
   jeweler (~> 1.6.2)
   minitest
   mocha
-  nokogiri (~> 1.4.6)
+  nokogiri (~> 1.5.0)
   rcov
   ruby-debug
