@@ -1,6 +1,6 @@
 
 
-# HTTParty ma parsować XML za pomocą Nokogiri. CRACK jest zbyt prosty do naszych zastosowań.
+# HTTParty ma parsowac XML za pomoca Nokogiri. CRACK jest zbyt prosty do naszych zastosowan.
 module HTTParty
   class Parser
 

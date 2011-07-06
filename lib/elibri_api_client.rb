@@ -20,7 +20,7 @@ module Elibri
       @password = options[:password]
       @host_uri = options[:host_uri] || DEFAULT_API_HOST_URI
 
-      # W przyszłości mogą być nowe wersje API, więc zostawiamy sobie furtkę w postaci adapterów:
+      # W przyszlosci moga byc nowe wersje API, wiec zostawiamy sobie furtke w postaci adapterow:
       api_version_str = options[:api_version] || 'v1'
       adapter_class = Elibri::ApiClient::ApiAdapters.const_get(api_version_str.upcase) # Elibri::ApiClient::ApiAdapters::V1
       @api_adapter = adapter_class.new(@host_uri, @login, @password)

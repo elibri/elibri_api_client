@@ -17,11 +17,11 @@ module Elibri
         class QueueDoesNotExists < RuntimeError; end
         class InvalidPageNumber < RuntimeError; end
 
-        # Klasy wyjątków rzucanych, gdy elibri zwróci określony błąd. Np. gdy dostaniemy:
+        # Klasy wyjatków rzucanych, gdy elibri zwróci określony blad. Np. gdy dostaniemy:
         #   <error id="1001">
         #     <message>Queue does not exist</message>
         #   </error>
-        # Biblioteka rzuca wyjątkiem QueueDoesNotExists.
+        # Biblioteka rzuca wyjatkiem QueueDoesNotExists.
         EXCEPTION_CLASSES = {
           '404' => NotFound,
           '403' => Forbidden,
@@ -33,7 +33,7 @@ module Elibri
         }.freeze
 
 
-        # Zamiast rzeźbić ciągle w XML`u, tworzymy instancje kolejek.
+        # Zamiast rzezbic ciagle w XML`u, tworzymy instancje kolejek.
         class Queue
           attr_reader :name, :items_total, :picked_up_at, :last_insert_at, :queue_id, :url
 
@@ -49,26 +49,26 @@ module Elibri
           end
 
 
-          # Przekonwertuj kolejkę z danymi oczekującymi (np. 'pending_meta') na kolejkę nazwaną.
+          # Przekonwertuj kolejke z danymi oczekujacymi (np. 'pending_meta') na kolejke nazwana.
           def pick_up!
             @api_adapter.pick_up_queue!(self) unless picked_up?
           end
 
 
-          # Hermetyzujemy stronicowanie danych. Programistę interesują tylko kolejne rekordy <Product>
+          # Hermetyzujemy stronicowanie danych. Programiste interesuja tylko kolejne rekordy <Product>
           def each_product(&block)
             @api_adapter.each_product(self, &block)
           end
 
 
-          # Czy to jest kolejka nazwana, czy oczekująca? Wszystkie kolejki z danymi oczekującymi mają w nazwie
+          # Czy to jest kolejka nazwana, czy oczekujaca? Wszystkie kolejki z danymi oczekujacymi maja w nazwie
           # przedrostek 'pending_'. Np. 'pending_meta', 'pending_stocks'.
           def picked_up?
             !self.name.start_with?('pending_')
           end
 
 
-          # Zbuduj instancję kolejki na podstawie XML`a.
+          # Zbuduj instancje kolejki na podstawie XML`a.
           def self.build_from_xml(api_adapter, queue_xml)
             queue_xml = Nokogiri::XML(queue_xml).css('queue').first if queue_xml.is_a? String
             Queue.new(api_adapter,

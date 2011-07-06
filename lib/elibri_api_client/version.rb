@@ -4,7 +4,7 @@ module Elibri
     module Version
       MAJOR = 1
       MINOR = 0
-      PATCH = 2
+      PATCH = 3
 
       STRING = [MAJOR, MINOR, PATCH].compact.join('.')
     end

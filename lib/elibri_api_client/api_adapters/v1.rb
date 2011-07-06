@@ -4,8 +4,8 @@ module Elibri
   class ApiClient
     module ApiAdapters
 
-      # Adapter dla 1 wersji API. Instancję odpowiedniego adaptera tworzy klasa Elibri::ApiClient - nie
-      # robimy tego ręcznie.
+      # Adapter dla 1 wersji API. Instancje odpowiedniego adaptera tworzy klasa Elibri::ApiClient - nie
+      # robimy tego recznie.
       class V1
         URI_PREFIX = '/api/v1'
 
@@ -18,15 +18,15 @@ module Elibri
         end
 
 
-        # Wypełnij wszystkie kolejki oczekujące, wszystkimi dostępnymi danymi. Przydatne przy wykonywaniu
-        # pełnej synchronizacji pomiędzy naszą aplikacją a Elibri.
+        # Wypelnij wszystkie kolejki oczekujace, wszystkimi dostepnymi danymi. Przydatne przy wykonywaniu
+        # pelnej synchronizacji pomiedzy nasza aplikacja a Elibri.
         def refill_all_queues!
-          # Dla POST musi być jakieś 'body' requestu, bo serwery często rzucają wyjątkami (WEBrick w szczególności).
+          # Dla POST musi byc jakies 'body' requestu, bo serwery czesto rzucaja wyjatkami (WEBrick w szczegolnosci).
           post '/queues/refill_all', :body => ' '
         end
 
 
-        # Zwróć listę kolejek z oczekującymi danymi.
+        # Zwroc liste kolejek z oczekujacymi danymi.
         def pending_queues
           resp = get '/queues/pending_data'
 
@@ -39,15 +39,15 @@ module Elibri
         end
 
 
-        # Czy są jakieś oczekujące dane w Elibri?
+        # Czy sa jakies oczekujace dane w Elibri?
         def pending_data?
           !pending_queues.empty?
         end
 
 
-        # Utwórz z danych oczekujących w kolejce np. 'pending_meta', kolejkę nazwaną.
-        # Tylko z kolejek nazwanych można pobierać dane. Jako argument przyjmuje nazwę kolejki (np. 'pending_meta')
-        # lub odpowiednią instancję Elibri::ApiClient::ApiAdapters::V1::Queue.
+        # Utworz z danych oczekujacych w kolejce np. 'pending_meta', kolejke nazwana.
+        # Tylko z kolejek nazwanych mozna pobierac dane. Jako argument przyjmuje nazwe kolejki (np. 'pending_meta')
+        # lub odpowiednia instancje Elibri::ApiClient::ApiAdapters::V1::Queue.
         def pick_up_queue!(queue)
           case queue
             when Elibri::ApiClient::ApiAdapters::V1::Queue
@@ -78,7 +78,7 @@ module Elibri
         end
 
 
-        # Trawersuj kolekcję produktów w nazwanej kolejce. Instancję nazwanej kolejki należy przekazać
+        # Trawersuj kolekcje produktow w nazwanej kolejce. Instancje nazwanej kolejki nalezy przekazac
         # jako argument metody.
         def each_product(queue, &block)
           raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Queue instance' unless queue.kind_of? Elibri::ApiClient::ApiAdapters::V1::Queue
@@ -93,8 +93,8 @@ module Elibri
         end
 
 
-        # Ostatnio utworzone nazwane kolejki. Gdy wysypie nam się aplikacja, można przeglądać ostatnie pickupy
-        # i ponownie pobierać z nich dane.
+        # Ostatnio utworzone nazwane kolejki. Gdy wysypie nam sie aplikacja, mozna przegladac ostatnie pickupy
+        # i ponownie pobierac z nich dane.
         def last_pickups
           last_pickups = []
           %w{meta stocks}.each do |queue_name|
@@ -102,7 +102,7 @@ module Elibri
               response = get "/queues/#{queue_name}/last_pick_up"
               queue_xml = response.parsed_response.css('queue').first
               last_pickups << Elibri::ApiClient::ApiAdapters::V1::Queue.build_from_xml(self, queue_xml)
-            rescue NoRecentlyPickedUpQueues # Ignoruj błędy o braku ostatnich pickupów.
+            rescue NoRecentlyPickedUpQueues # Ignoruj bledy o braku ostatnich pickupow.
             end
           end  
           
@@ -149,7 +149,7 @@ module Elibri
           end
 
 
-          # Jeśli Elibri zwóci jakiś błąd, to rzucamy odpowiednim wyjątkiem.
+          # Jesli Elibri zwoci jakis blad, to rzucamy odpowiednim wyjatkiem.
           def raise_if_error_present_in(response)
             raise Unauthorized, 'Bad login or password' if response.code == 401
 
@@ -158,11 +158,11 @@ module Elibri
               error_id = response_xml.css('error').first['id']
               error_message = response_xml.css('error message').first.text
 
-              # Rozpoznajemy ten kod błędu i możemy rzucić określoną klasą wyjątku:
+              # Rozpoznajemy ten kod bledu i mozemy rzucic okreslona klasa wyjatku:
               if exception_class = EXCEPTION_CLASSES[error_id.to_s]
                 raise exception_class, error_message
               else
-                # Jakiś nieznany błąd - rzucamy chociaż stringiem
+                # Jakis nieznany blad - rzucamy chociaz stringiem
                 raise UnknownError, "ELIBRI_API ERROR #{error_id}: #{error_message}"
               end
             end
