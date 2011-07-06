@@ -16,7 +16,7 @@ require './lib/elibri_api_client/version.rb'
 Jeweler::Tasks.new do |gem|
   gem.name = "elibri_api_client"
   gem.version = Elibri::ApiClient::Version::STRING
-  gem.homepage = "http://github.com/murbanski/elibri_api_client"
+  gem.homepage = "http://github.com/elibri/elibri_api_client"
   gem.license = "MIT"
   gem.summary = %Q{API client for elibri.com.pl publishing system}
   gem.description = %Q{API client for elibri.com.pl publishing system}
