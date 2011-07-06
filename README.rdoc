@@ -1,0 +1,24 @@
+= elibri_api_client
+
+  require 'elibri_api_client'
+  cli = Elibri::ApiClient.new(:host_uri => 'http://localhost:3010', :login => '1b20fa9d72234423979c', :password => '2847cbf4f15a4057e2ab')
+  
+  cli.refill_all_queues!
+  cli.pending_data?
+  cli.last_pickups
+
+  cli.pending_queues.each do |pending_queue|
+    named_queue = pending_queue.pick_up!
+
+    named_queue.each_product do |product_xml, product_no|
+      # [...]
+    end
+  end
+
+
+
+== Copyright
+
+Copyright (c) 2011 elibri.com.pl. See LICENSE.txt for
+further details.
+
