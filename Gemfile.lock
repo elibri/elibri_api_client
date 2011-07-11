@@ -1,6 +1,8 @@
 GEM
   remote: http://rubygems.org/
   specs:
+    activesupport (3.1.0.rc1)
+      multi_json (~> 1.0)
     columnize (0.3.3)
     crack (0.1.8)
     git (1.2.5)
@@ -14,6 +16,7 @@ GEM
       rbx-require-relative (> 0.0.4)
     minitest (2.2.2)
     mocha (0.9.12)
+    multi_json (1.0.3)
     nokogiri (1.5.0)
     rake (0.9.0)
     rbx-require-relative (0.0.5)
@@ -28,6 +31,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  activesupport (>= 3.1.0.rc1)
   bundler (~> 1.0.0)
   httparty (~> 0.7.8)
   jeweler (~> 1.6.2)

@@ -17,7 +17,7 @@ module Elibri
         class QueueDoesNotExists < RuntimeError; end
         class InvalidPageNumber < RuntimeError; end
 
-        # Klasy wyjatków rzucanych, gdy elibri zwróci określony blad. Np. gdy dostaniemy:
+        # Klasy wyjatkow rzucanych, gdy elibri zwroci okreslony blad. Np. gdy dostaniemy:
         #   <error id="1001">
         #     <message>Queue does not exist</message>
         #   </error>

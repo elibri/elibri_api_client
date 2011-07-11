@@ -2,6 +2,7 @@ source "http://rubygems.org"
 
 gem "httparty", "~> 0.7.8"
 gem "nokogiri", "~> 1.5.0"
+gem 'activesupport', '>= 3.1.0.rc1'
 
 group :development do
   gem "ruby-debug"
