@@ -75,7 +75,7 @@ describe Elibri::ApiClient::ApiAdapters::V1::Queue do
     block = lambda {|product_xml| product_xml.css('RecordReference')  }
 
     queue = Elibri::ApiClient::ApiAdapters::V1::Queue.new(@api_adapter, :name => 'meta')
-    @api_adapter.expects(:each_product).with(queue)
+    @api_adapter.expects(:each_product_in_queue).with(queue)
     queue.each_product(&block)
   end
   

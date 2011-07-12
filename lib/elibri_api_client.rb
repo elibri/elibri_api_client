@@ -3,6 +3,7 @@ require 'time'
 require 'httparty'
 require 'nokogiri'
 require 'forwardable'
+require 'active_support/core_ext/object/blank'
 require 'elibri_api_client/core_extensions'
 require 'elibri_api_client/version'
 require 'elibri_api_client/api_adapters'
@@ -29,7 +30,8 @@ module Elibri
 
     # Metody API delegujemy do odpowiedniego adaptera:
     def_delegators :@api_adapter,
-      :refill_all_queues!, :pending_data?, :pending_queues, :pick_up_queue!, :last_pickups, :each_product, :each_page
+      :refill_all_queues!, :pending_data?, :pending_queues, :pick_up_queue!, :last_pickups,
+      :each_product_in_queue, :each_page_in_queue, :publishers
 
   end
 end

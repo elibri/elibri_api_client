@@ -42,6 +42,40 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
   end
   
 
+  describe "when asked to establish available publishers list" do
+    before do
+      xml = <<-XML
+        <publishers>
+          <publisher name="Wydawnicta Naukowo-Techniczne" city="Kraków" company_name="WNT Polska Sp. z o.o." zip_code="30-417" id="1" street="Łagiewnicka 33a" phone1="(12) 252-85-92" phone2="(12) 252-85-80" nip="679-284-08-64" www="http://www.wnt.com" email="sprzedaz@wnt.com">
+            <products url="http://api.elibri.com.pl/api/v1/publishers/1/products" count="350"/>
+          </publisher>
+          <publisher name="Abiekt.pl" city="Warszawa" www="http://www.abiekt.pl" company_name="Abiekt.pl Sp&#243;&#322;ka z o.o." zip_code="00-785" id="2" street="Grottgera 9a/7" phone1="609-626-500" nip="521-348-37-69" email="wojciech.szot@abiekt.pl">
+            <products url="http://api.elibri.com.pl/api/v1/publishers/2/products" count="7"/>
+          </publisher>
+        </publishers>
+      XML
+      response_stub = stub('response_stub', :code => 200, :parsed_response => Nokogiri::XML(xml))
+      get_request_expected("#{FAKE_API_HOST}/api/v1/publishers").at_least_once.returns(response_stub)
+    end
+
+
+    it "should return Publisher instances with attributes filled from returned XML" do
+      publishers = @adapter.publishers
+      assert_equal 2, publishers.size
+      assert(publishers.all? { |publisher| publisher.kind_of? Elibri::ApiClient::ApiAdapters::V1::Publisher })
+
+      wnt = publishers.find {|publisher| publisher.publisher_id == 1}
+      abiekt = publishers.find {|publisher| publisher.publisher_id == 2}
+
+      # Wyrywkowo sprawdzamy atrybuty:
+      assert_equal 350, wnt.products_count
+      assert_equal 7, abiekt.products_count
+      assert_equal "521-348-37-69", abiekt.nip
+      assert_equal "Łagiewnicka 33a", wnt.street
+    end
+  end
+
+
   describe "when asked to establish pending queues list" do
 
     describe "and there is pending data awaiting for pull" do
@@ -292,7 +326,7 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
 
     it "should be able to iterate through page products" do
       expected_content = %w{<Product>PRODUCT_FROM_PAGE_1</Product> <Product>PRODUCT_FROM_PAGE_2</Product> <Product>PRODUCT_FROM_PAGE_3</Product>}
-      @adapter.each_page(@queue) do |page_content, page_no|
+      @adapter.each_page_in_queue(@queue) do |page_content, page_no|
         assert_equal expected_content[page_no-1], page_content.children.to_s
       end
     end
@@ -300,7 +334,7 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
 
     it "should be able to iterate through all product records" do
       expected_records = %w{PRODUCT_FROM_PAGE_1 PRODUCT_FROM_PAGE_2 PRODUCT_FROM_PAGE_3}
-      @adapter.each_product(@queue) do |product_xml, product_no|
+      @adapter.each_product_in_queue(@queue) do |product_xml, product_no|
         assert_equal expected_records[product_no-1], product_xml.text
       end
     end

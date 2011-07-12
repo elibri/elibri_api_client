@@ -64,7 +64,7 @@ module Elibri
         end
 
 
-        def each_page(queue, &block)
+        def each_page_in_queue(queue, &block)
           raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Queue instance' unless queue.kind_of? Elibri::ApiClient::ApiAdapters::V1::Queue
           
           page_no = 1
@@ -80,11 +80,11 @@ module Elibri
 
         # Trawersuj kolekcje produktow w nazwanej kolejce. Instancje nazwanej kolejki nalezy przekazac
         # jako argument metody.
-        def each_product(queue, &block)
+        def each_product_in_queue(queue, &block)
           raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Queue instance' unless queue.kind_of? Elibri::ApiClient::ApiAdapters::V1::Queue
 
           product_no = 1
-          each_page(queue) do |products_page_xml, page_no|
+          each_page_in_queue(queue) do |products_page_xml, page_no|
             products_page_xml.css('Product').each do |product_xml|
               block.call(product_xml, product_no)
               product_no += 1
@@ -107,6 +107,31 @@ module Elibri
           end  
           
           last_pickups
+        end
+
+
+        # Zwroc liste dostepnych wydawnictw.
+        def publishers
+          resp = get '/publishers'
+
+          publishers = []
+          resp.parsed_response.css('publisher').each do |publisher_xml|
+            publisher = Elibri::ApiClient::ApiAdapters::V1::Publisher.build_from_xml(self, publisher_xml)
+            publishers << publisher
+          end  
+          publishers
+        end
+
+
+        def each_product_for_publisher(publisher, &block)
+          resp = get "/publishers/#{publisher.publisher_id}/products"
+
+          products = []
+          resp.parsed_response.css('product').each do |product_xml|
+            product = Elibri::ApiClient::ApiAdapters::V1::Product.build_from_xml(self, publisher, product_xml)
+            products << product
+          end  
+          products
         end
 
 

@@ -57,7 +57,7 @@ module Elibri
 
           # Hermetyzujemy stronicowanie danych. Programiste interesuja tylko kolejne rekordy <Product>
           def each_product(&block)
-            @api_adapter.each_product(self, &block)
+            @api_adapter.each_product_in_queue(self, &block)
           end
 
 
@@ -81,6 +81,84 @@ module Elibri
             )
           end
           
+
+        end
+
+
+        class Publisher
+          attr_reader :publisher_id, :name, :products_count, :products_url, :company_name, :nip
+          attr_reader :street, :city, :zip_code, :phone1, :phone2, :www, :email
+
+
+          def initialize(api_adapter, attributes = {})
+            @api_adapter = api_adapter
+            @publisher_id = attributes[:publisher_id].to_i
+            @name = attributes[:name]
+            @products_count = attributes[:products_count].to_i
+            @products_url = attributes[:products_url]
+            @company_name = attributes[:company_name]
+            @nip = attributes[:nip]
+            @street = attributes[:street]
+            @city = attributes[:city]
+            @zip_code = attributes[:zip_code]
+            @phone1 = attributes[:phone1]
+            @phone2 = attributes[:phone2]
+            @www = attributes[:www]
+            @email = attributes[:email]
+          end
+
+
+          def each_product(&block)
+            @api_adapter.each_product_for_publisher(self, &block)
+          end
+
+
+          # Zbuduj instancje wydawnictwa na podstawie XML`a.
+          def self.build_from_xml(api_adapter, publisher_xml)
+            publisher_xml = Nokogiri::XML(publisher_xml).css('publisher').first if publisher_xml.is_a? String
+            Publisher.new(api_adapter,
+              :name => publisher_xml['name'],
+              :publisher_id => publisher_xml['id'].to_i,
+              :company_name => publisher_xml['company_name'],
+              :nip => publisher_xml['nip'],
+              :street => publisher_xml['street'],
+              :city => publisher_xml['city'],
+              :zip_code => publisher_xml['zip_code'],
+              :phone1 => publisher_xml['phone1'],
+              :phone2 => publisher_xml['phone2'],
+              :www => publisher_xml['www'],
+              :email => publisher_xml['email'],
+              :products_count => publisher_xml.css('products').first['count'].to_i,
+              :products_url => publisher_xml.css('products').first['url']
+            )
+          end
+
+        end
+
+
+        class Product
+          attr_reader :publisher, :product_id, :record_reference, :main_title, :url
+
+          def initialize(api_adapter, publisher, attributes = {})
+            @api_adapter = api_adapter
+            @publisher = publisher
+            @product_id = attributes[:product_id].to_i
+            @record_reference = attributes[:record_reference]
+            @main_title = attributes[:main_title]
+            @url = attributes[:url]
+          end
+
+
+          # Zbuduj instancje produktu na podstawie XML`a.
+          def self.build_from_xml(api_adapter, publisher, product_xml)
+            product_xml = Nokogiri::XML(product_xml).css('product').first if product_xml.is_a? String
+            Product.new(api_adapter, publisher,
+              :product_id => product_xml['id'].to_i,
+              :record_reference => product_xml['record_reference'],
+              :url => product_xml['url'],
+              :main_title => product_xml['main_title']
+            )
+          end
 
         end
 
