@@ -10,9 +10,11 @@ module Elibri
         URI_PREFIX = '/api/v1'
 
         include HTTParty
+        #--
         #debug_output $stderr
+        #++
 
-        def initialize(host_uri, login, password)
+        def initialize(host_uri, login, password) #:nodoc:
           @host_uri = host_uri
           @auth = {:username => login, :password => password}
         end
@@ -30,12 +32,12 @@ module Elibri
         def pending_queues
           resp = get '/queues/pending_data'
 
-          pending_queues = []
-          resp.parsed_response.css('queue').each do |queue_xml|
-            queue = Elibri::ApiClient::ApiAdapters::V1::Queue.build_from_xml(self, queue_xml)
-            pending_queues << queue if queue.items_total.nonzero?
-          end  
-          pending_queues
+          Array.new.tap do |pending_queues|
+            resp.parsed_response.css('queue').each do |queue_xml|
+              queue = Elibri::ApiClient::ApiAdapters::V1::Queue.build_from_xml(self, queue_xml)
+              pending_queues << queue if queue.products_count.nonzero?
+            end  
+          end
         end
 
 
@@ -64,7 +66,36 @@ module Elibri
         end
 
 
-        def each_page_in_queue(queue, &block)
+        # Ostatnio utworzone nazwane kolejki. Gdy wysypie nam sie aplikacja, mozna przegladac ostatnie pickupy
+        # i ponownie pobierac z nich dane.
+        def last_pickups
+          Array.new.tap do |last_pickups|
+            %w{meta stocks}.each do |queue_name|
+              begin
+                response = get "/queues/#{queue_name}/last_pick_up"
+                queue_xml = response.parsed_response.css('queue').first
+                last_pickups << Elibri::ApiClient::ApiAdapters::V1::Queue.build_from_xml(self, queue_xml)
+              rescue Exceptions::NoRecentlyPickedUpQueues # Ignoruj bledy o braku ostatnich pickupow.
+              end
+            end  
+          end
+        end
+
+
+        # Zwroc liste dostepnych wydawnictw.
+        def publishers
+          resp = get '/publishers'
+
+          Array.new.tap do |publishers|
+            resp.parsed_response.css('publisher').each do |publisher_xml|
+              publisher = Elibri::ApiClient::ApiAdapters::V1::Publisher.build_from_xml(self, publisher_xml)
+              publishers << publisher
+            end  
+          end
+        end
+
+
+        def each_page_in_queue(queue, &block) #:nodoc:
           raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Queue instance' unless queue.kind_of? Elibri::ApiClient::ApiAdapters::V1::Queue
           
           page_no = 1
@@ -80,7 +111,7 @@ module Elibri
 
         # Trawersuj kolekcje produktow w nazwanej kolejce. Instancje nazwanej kolejki nalezy przekazac
         # jako argument metody.
-        def each_product_in_queue(queue, &block)
+        def each_product_onix_in_queue(queue, &block) #:nodoc:
           raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Queue instance' unless queue.kind_of? Elibri::ApiClient::ApiAdapters::V1::Queue
 
           product_no = 1
@@ -93,45 +124,25 @@ module Elibri
         end
 
 
-        # Ostatnio utworzone nazwane kolejki. Gdy wysypie nam sie aplikacja, mozna przegladac ostatnie pickupy
-        # i ponownie pobierac z nich dane.
-        def last_pickups
-          last_pickups = []
-          %w{meta stocks}.each do |queue_name|
-            begin
-              response = get "/queues/#{queue_name}/last_pick_up"
-              queue_xml = response.parsed_response.css('queue').first
-              last_pickups << Elibri::ApiClient::ApiAdapters::V1::Queue.build_from_xml(self, queue_xml)
-            rescue NoRecentlyPickedUpQueues # Ignoruj bledy o braku ostatnich pickupow.
-            end
-          end  
-          
-          last_pickups
-        end
-
-
-        # Zwroc liste dostepnych wydawnictw.
-        def publishers
-          resp = get '/publishers'
-
-          publishers = []
-          resp.parsed_response.css('publisher').each do |publisher_xml|
-            publisher = Elibri::ApiClient::ApiAdapters::V1::Publisher.build_from_xml(self, publisher_xml)
-            publishers << publisher
-          end  
-          publishers
-        end
-
-
-        def each_product_for_publisher(publisher, &block)
+        # Zwroc liste produktow dla podanego wydawnictwa.
+        def products_for_publisher(publisher) #:nodoc:
+          raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Publisher instance' unless publisher.kind_of? Elibri::ApiClient::ApiAdapters::V1::Publisher
           resp = get "/publishers/#{publisher.publisher_id}/products"
 
-          products = []
-          resp.parsed_response.css('product').each do |product_xml|
-            product = Elibri::ApiClient::ApiAdapters::V1::Product.build_from_xml(self, publisher, product_xml)
-            products << product
-          end  
-          products
+          Array.new.tap do |products|
+            resp.parsed_response.css('product').each do |product_xml|
+              product = Elibri::ApiClient::ApiAdapters::V1::Product.build_from_xml(self, publisher, product_xml)
+              products << product
+            end  
+          end
+        end
+
+
+        # Zwroc ONIX dla konkretnego produktu.
+        def onix_xml_for_product(product) #:nodoc:
+          raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Product instance' unless product.kind_of? Elibri::ApiClient::ApiAdapters::V1::Product
+          resp = get "/products/#{product.product_id}"
+          resp.parsed_response.css('Product').first
         end
 
 
@@ -176,7 +187,7 @@ module Elibri
 
           # Jesli Elibri zwoci jakis blad, to rzucamy odpowiednim wyjatkiem.
           def raise_if_error_present_in(response)
-            raise Unauthorized, 'Bad login or password' if response.code == 401
+            raise Exceptions::Unauthorized, 'Bad login or password' if response.code == 401
 
             response_xml = response.parsed_response
             if response_xml && !response_xml.css('error').empty?
@@ -188,7 +199,7 @@ module Elibri
                 raise exception_class, error_message
               else
                 # Jakis nieznany blad - rzucamy chociaz stringiem
-                raise UnknownError, "ELIBRI_API ERROR #{error_id}: #{error_message}"
+                raise Exceptions::UnknownError, "ELIBRI_API ERROR #{error_id}: #{error_message}"
               end
             end
           end

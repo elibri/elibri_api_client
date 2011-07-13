@@ -1,20 +1,49 @@
-= elibri_api_client
+= Klient API serwisu elibri.com.pl
 
-  require 'elibri_api_client'
-  cli = Elibri::ApiClient.new(:host_uri => 'http://localhost:3010', :login => '1b20fa9d72234423979c', :password => '2847cbf4f15a4057e2ab')
+=== 0. Gemfile dla Bundlera
+  gem 'elibri_api_client'
+
+=== 1. Tworzymy instancje klienta
+  elibri = Elibri::ApiClient.new(:login => '1b20fa9d72234423979c', :password => '2847cbf4f15a4057e2ab')
   
-  cli.refill_all_queues!
-  cli.pending_data?
-  cli.last_pickups
+=== 2. Przegladanie dostepnych danych
 
-  cli.pending_queues.each do |pending_queue|
-    named_queue = pending_queue.pick_up!
-
-    named_queue.each_product do |product_xml, product_no|
-      # [...]
+  elibri.publishers.each do |publisher|
+    puts "#{publisher.name}, #{publisher.city} (#{publisher.products_count} produktow)"
+    publisher.products.each_with_index do |product, product_no|
+      puts "\t#{product_no}. #{product.main_title}"
+      # puts product.onix_xml
     end
   end
 
+
+
+=== 3. Operacje na kolejkach zmian
+
+==== 3a. Pobieranie ostatnio zmienionych produktow w Elibri
+
+  # Wypelnij wszystkie kolejki oczekujace, wszystkimi dostepnymi danymi.
+  # Przydatne przy wykonywaniu pelnej synchronizacji pomiedzy nasza aplikacja a Elibri.
+  # Inna mozliwosc to iteracja elibri.publishers i sekwencyjne pobieranie danych kolejnych
+  # produktow (moze byc wolniejsze od kolejek zmian).
+  # elibri.refill_all_queues!
+
+  elibri.pending_queues.each do |pending_queue|
+    # Aby moc pobierac dane, musimy kolejke oczekujaca przekonwertowac na kolejke nazwana.
+    # Taka kolejke identyfikujemy po ID i jej tresc pozniej nie ulega zmianie.
+    named_queue = pending_queue.pick_up!
+
+    # Majac kolejke nazwana, mozemy iterowac po jej produktach (ONIX):
+    named_queue.each_product_onix do |product_xml, product_no|
+      # Otrzymujemy przeparsowany XML za pomoca Nokogiri
+      # product_xml.class => Nokogiri::XML::Element
+
+      puts product.xml.css('RecordReference')
+    end
+  end
+
+==== 3b. Znadz ostatnio pobrane kolejki
+  named_queue = elibri.last_pickups.first
 
 
 == Copyright

@@ -5,7 +5,7 @@ describe Elibri::ApiClient::ApiAdapters::V1::Product do
 
   before do
     @api_adapter = mock('api_adapter')
-    @publisher = stub('publisher', :name => 'Wydawnictwo')
+    @publisher = stub('publisher', :name => 'Wydawnictwo', :publisher_id => 1234)
   end
 
 
@@ -31,7 +31,6 @@ describe Elibri::ApiClient::ApiAdapters::V1::Product do
     }
 
     product = Elibri::ApiClient::ApiAdapters::V1::Product.build_from_xml(@api_adapter, @publisher, xml)
-
     assert_equal 3, product.product_id
     assert_equal 'Erlang Programming', product.main_title
     assert_equal '04325b31fdece145d22e', product.record_reference
@@ -39,6 +38,10 @@ describe Elibri::ApiClient::ApiAdapters::V1::Product do
   end
 
 
-
-
+  it "should be able to establish its full ONIX xml" do
+    product = Elibri::ApiClient::ApiAdapters::V1::Product.new(@api_adapter, @publisher, :product_id => 1111)
+    @api_adapter.expects(:onix_xml_for_product).with(product)
+    product.onix_xml
+  end
+  
 end

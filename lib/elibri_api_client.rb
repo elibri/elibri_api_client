@@ -16,6 +16,10 @@ module Elibri
     attr_reader :host_uri
 
 
+    #  cli = Elibri::ApiClient.new(:login => '1b20fa9d72234423979c', :password => '2847cbf4f15a4057e2ab')
+    #
+    # Opcjonalnie mozna podac adres servera API:
+    #  cli = Elibri::ApiClient.new(:host_uri => 'http://localhost:3010', :login => '1b20fa9d72234423979c', :password => '2847cbf4f15a4057e2ab')
     def initialize(options = {})
       @login = options[:login]
       @password = options[:password]
@@ -29,9 +33,7 @@ module Elibri
 
 
     # Metody API delegujemy do odpowiedniego adaptera:
-    def_delegators :@api_adapter,
-      :refill_all_queues!, :pending_data?, :pending_queues, :pick_up_queue!, :last_pickups,
-      :each_product_in_queue, :each_page_in_queue, :publishers
+    def_delegators :@api_adapter, :refill_all_queues!, :pending_data?, :pending_queues, :last_pickups, :publishers
 
   end
 end

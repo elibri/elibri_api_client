@@ -1,7 +1,7 @@
 
 
 # HTTParty ma parsowac XML za pomoca Nokogiri. CRACK jest zbyt prosty do naszych zastosowan.
-module HTTParty
+module HTTParty #:nodoc:all
   class Parser
 
     def xml

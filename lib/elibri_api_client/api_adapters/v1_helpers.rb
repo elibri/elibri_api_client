@@ -7,40 +7,42 @@ module Elibri
       # Adapter dla pierwszej wersji API.
       class V1
 
-        class UnknownError < RuntimeError; end
-        class Unauthorized < RuntimeError; end
-        class NotFound < RuntimeError; end
-        class Forbidden < RuntimeError; end
-        class ServerError < RuntimeError; end
-        class NoPendingData < RuntimeError; end
-        class NoRecentlyPickedUpQueues < RuntimeError; end
-        class QueueDoesNotExists < RuntimeError; end
-        class InvalidPageNumber < RuntimeError; end
+        module Exceptions #:nodoc:all
+          class UnknownError < RuntimeError; end
+          class Unauthorized < RuntimeError; end
+          class NotFound < RuntimeError; end
+          class Forbidden < RuntimeError; end
+          class ServerError < RuntimeError; end
+          class NoPendingData < RuntimeError; end
+          class NoRecentlyPickedUpQueues < RuntimeError; end
+          class QueueDoesNotExists < RuntimeError; end
+          class InvalidPageNumber < RuntimeError; end
+        end
 
         # Klasy wyjatkow rzucanych, gdy elibri zwroci okreslony blad. Np. gdy dostaniemy:
         #   <error id="1001">
         #     <message>Queue does not exist</message>
         #   </error>
-        # Biblioteka rzuca wyjatkiem QueueDoesNotExists.
+        # Biblioteka rzuca wyjatkiem Elibri::ApiClient::ApiAdapters::V1::Exceptions::QueueDoesNotExists.
         EXCEPTION_CLASSES = {
-          '404' => NotFound,
-          '403' => Forbidden,
-          '500' => ServerError,
-          '1001' => QueueDoesNotExists,
-          '1002' => NoPendingData,
-          '1003' => NoRecentlyPickedUpQueues,
-          '1004' => InvalidPageNumber
+          '404' =>  Exceptions::NotFound,
+          '403' =>  Exceptions::Forbidden,
+          '500' =>  Exceptions::ServerError,
+          '1001' => Exceptions::QueueDoesNotExists,
+          '1002' => Exceptions::NoPendingData,
+          '1003' => Exceptions::NoRecentlyPickedUpQueues,
+          '1004' => Exceptions::InvalidPageNumber
         }.freeze
 
 
         # Zamiast rzezbic ciagle w XML`u, tworzymy instancje kolejek.
         class Queue
-          attr_reader :name, :items_total, :picked_up_at, :last_insert_at, :queue_id, :url
+          attr_reader :name, :products_count, :picked_up_at, :last_insert_at, :queue_id, :url
 
-          def initialize(api_adapter, attributes = {})
+          def initialize(api_adapter, attributes = {}) #:nodoc:
             @api_adapter = api_adapter
             @name = attributes[:name]
-            @items_total = attributes[:items_total].to_i
+            @products_count = attributes[:products_count].to_i
             @queue_id = attributes[:queue_id]
             @url = attributes[:url]
 
@@ -55,9 +57,10 @@ module Elibri
           end
 
 
-          # Hermetyzujemy stronicowanie danych. Programiste interesuja tylko kolejne rekordy <Product>
-          def each_product(&block)
-            @api_adapter.each_product_in_queue(self, &block)
+          # Iteruj po kolejnych rekordach ONIX w nazwanej kolejce.
+          def each_product_onix(&block)
+            raise 'Cannot iterate unpicked queue products! Try named = queue.pick_up! and then named.each_product_onix' unless self.picked_up?
+            @api_adapter.each_product_onix_in_queue(self, &block)
           end
 
 
@@ -69,20 +72,19 @@ module Elibri
 
 
           # Zbuduj instancje kolejki na podstawie XML`a.
-          def self.build_from_xml(api_adapter, queue_xml)
+          def self.build_from_xml(api_adapter, queue_xml) #:nodoc:
             queue_xml = Nokogiri::XML(queue_xml).css('queue').first if queue_xml.is_a? String
             Queue.new(api_adapter,
               :name => queue_xml['name'],
-              :items_total => queue_xml['items_total'].to_i,
+              :products_count => queue_xml['products_count'].to_i,
               :last_insert_at => queue_xml['last_insert_at'],
               :url => queue_xml['url'],
               :queue_id => queue_xml['id'],
               :picked_up_at => queue_xml['picked_up_at']
             )
           end
-          
-
         end
+
 
 
         class Publisher
@@ -90,7 +92,7 @@ module Elibri
           attr_reader :street, :city, :zip_code, :phone1, :phone2, :www, :email
 
 
-          def initialize(api_adapter, attributes = {})
+          def initialize(api_adapter, attributes = {}) #:nodoc:
             @api_adapter = api_adapter
             @publisher_id = attributes[:publisher_id].to_i
             @name = attributes[:name]
@@ -108,13 +110,13 @@ module Elibri
           end
 
 
-          def each_product(&block)
-            @api_adapter.each_product_for_publisher(self, &block)
+          def products
+            @api_adapter.products_for_publisher(self)
           end
 
 
           # Zbuduj instancje wydawnictwa na podstawie XML`a.
-          def self.build_from_xml(api_adapter, publisher_xml)
+          def self.build_from_xml(api_adapter, publisher_xml) #:nodoc:
             publisher_xml = Nokogiri::XML(publisher_xml).css('publisher').first if publisher_xml.is_a? String
             Publisher.new(api_adapter,
               :name => publisher_xml['name'],
@@ -139,7 +141,7 @@ module Elibri
         class Product
           attr_reader :publisher, :product_id, :record_reference, :main_title, :url
 
-          def initialize(api_adapter, publisher, attributes = {})
+          def initialize(api_adapter, publisher, attributes = {}) #:nodoc:
             @api_adapter = api_adapter
             @publisher = publisher
             @product_id = attributes[:product_id].to_i
@@ -149,8 +151,13 @@ module Elibri
           end
 
 
+          def onix_xml
+            @api_adapter.onix_xml_for_product(self)
+          end
+
+
           # Zbuduj instancje produktu na podstawie XML`a.
-          def self.build_from_xml(api_adapter, publisher, product_xml)
+          def self.build_from_xml(api_adapter, publisher, product_xml) #:nodoc:
             product_xml = Nokogiri::XML(product_xml).css('product').first if product_xml.is_a? String
             Product.new(api_adapter, publisher,
               :product_id => product_xml['id'].to_i,

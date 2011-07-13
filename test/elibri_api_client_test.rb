@@ -40,7 +40,7 @@ describe Elibri::ApiClient do
   it "should delegate several methods to apropriate API adapter" do
     client = Elibri::ApiClient.new(:login => 'elibri_login', :password => 'pass')
 
-    delegated_methods = %w{refill_all_queues! pending_data? pending_queues pick_up_queue! last_pickups each_product_in_queue each_page_in_queue publishers}
+    delegated_methods = %w{refill_all_queues! pending_data? pending_queues last_pickups publishers}
     delegated_methods.each {|method_name| client.instance_variable_get('@api_adapter').expects(method_name) }
     delegated_methods.each {|method_name| client.send(method_name) }
   end

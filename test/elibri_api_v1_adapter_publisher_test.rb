@@ -51,12 +51,10 @@ describe Elibri::ApiClient::ApiAdapters::V1::Publisher do
   end
 
 
-  it "should provide iterator for traversing products list" do
-    block = lambda {|product_xml| product_xml.css('RecordReference')  }
-
+  it "should be able to establish its products list" do
     publisher = Elibri::ApiClient::ApiAdapters::V1::Publisher.new(@api_adapter, :publisher_id => 1234)
-    @api_adapter.expects(:each_product_for_publisher).with(publisher)
-    publisher.each_product(&block)
+    @api_adapter.expects(:products_for_publisher).with(publisher)
+    publisher.products
   end
   
 
