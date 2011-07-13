@@ -22,13 +22,20 @@ module Elibri
 
         # Wypelnij wszystkie kolejki oczekujace, wszystkimi dostepnymi danymi. Przydatne przy wykonywaniu
         # pelnej synchronizacji pomiedzy nasza aplikacja a Elibri.
+        # call-seq:
+        #   refill_all_queues! -> true
+        #
         def refill_all_queues!
           # Dla POST musi byc jakies 'body' requestu, bo serwery czesto rzucaja wyjatkami (WEBrick w szczegolnosci).
           post '/queues/refill_all', :body => ' '
+          true
         end
 
 
-        # Zwroc liste kolejek z oczekujacymi danymi.
+        # Zwroc liste kolejek z oczekujacymi danymi - instancje Elibri::ApiClient::ApiAdapters::V1::Queue
+        # call-seq:
+        #   pending_queues -> array
+        #
         def pending_queues
           resp = get '/queues/pending_data'
 
@@ -42,32 +49,19 @@ module Elibri
 
 
         # Czy sa jakies oczekujace dane w Elibri?
+        # call-seq:
+        #   pending_data? -> true or false
+        #
         def pending_data?
           !pending_queues.empty?
         end
 
 
-        # Utworz z danych oczekujacych w kolejce np. 'pending_meta', kolejke nazwana.
-        # Tylko z kolejek nazwanych mozna pobierac dane. Jako argument przyjmuje nazwe kolejki (np. 'pending_meta')
-        # lub odpowiednia instancje Elibri::ApiClient::ApiAdapters::V1::Queue.
-        def pick_up_queue!(queue)
-          case queue
-            when Elibri::ApiClient::ApiAdapters::V1::Queue
-              queue_name = queue.name
-            when String
-              queue_name = queue
-            else
-              raise 'Specify queue as name or Elibri::ApiClient::ApiAdapters::V1::Queue instance'
-          end
-
-          response = post "/queues/#{queue_name}/pick_up", :body => ' '
-          picked_up_queue_xml = response.parsed_response.css('pick_up queue').first
-          Elibri::ApiClient::ApiAdapters::V1::Queue.build_from_xml(self, picked_up_queue_xml)
-        end
-
-
         # Ostatnio utworzone nazwane kolejki. Gdy wysypie nam sie aplikacja, mozna przegladac ostatnie pickupy
-        # i ponownie pobierac z nich dane.
+        # i ponownie pobierac z nich dane. Zwraca instance Elibri::ApiClient::ApiAdapters::V1::Queue
+        # call-seq:
+        #   last_pickups -> array
+        #
         def last_pickups
           Array.new.tap do |last_pickups|
             %w{meta stocks}.each do |queue_name|
@@ -82,7 +76,10 @@ module Elibri
         end
 
 
-        # Zwroc liste dostepnych wydawnictw.
+        # Zwroc liste dostepnych wydawnictw - instancje Elibri::ApiClient::ApiAdapters::V1::Publisher
+        # call-seq:
+        #   publishers -> array
+        #
         def publishers
           resp = get '/publishers'
 
@@ -92,6 +89,25 @@ module Elibri
               publishers << publisher
             end  
           end
+        end
+
+
+        # Utworz z danych oczekujacych w kolejce np. 'pending_meta', kolejke nazwana.
+        # Tylko z kolejek nazwanych mozna pobierac dane. Jako argument przyjmuje nazwe kolejki (np. 'pending_meta')
+        # lub odpowiednia instancje Elibri::ApiClient::ApiAdapters::V1::Queue.
+        def pick_up_queue!(queue) #:nodoc:
+          case queue
+            when Elibri::ApiClient::ApiAdapters::V1::Queue
+              queue_name = queue.name
+            when String
+              queue_name = queue
+            else
+              raise 'Specify queue as name or Elibri::ApiClient::ApiAdapters::V1::Queue instance'
+          end
+
+          response = post "/queues/#{queue_name}/pick_up", :body => ' '
+          picked_up_queue_xml = response.parsed_response.css('pick_up queue').first
+          Elibri::ApiClient::ApiAdapters::V1::Queue.build_from_xml(self, picked_up_queue_xml)
         end
 
 
@@ -141,7 +157,7 @@ module Elibri
         # Zwroc ONIX dla konkretnego produktu.
         def onix_xml_for_product(product) #:nodoc:
           raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Product instance' unless product.kind_of? Elibri::ApiClient::ApiAdapters::V1::Product
-          resp = get "/products/#{product.product_id}"
+          resp = get "/products/#{product.record_reference}"
           resp.parsed_response.css('Product').first
         end
 

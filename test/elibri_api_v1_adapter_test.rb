@@ -350,9 +350,9 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
       xml = <<-XML
         <publisher id="#{@publisher.publisher_id}" name="Wydawnicta Naukowo-Techniczne">
           <products count="3" url="#{FAKE_API_HOST}/api/v1/publishers/#{@publisher.publisher_id}/products">
-            <product id="3" main_title="Erlang Programming" record_reference="04325b31fdece145d22e" url="#{FAKE_API_HOST}/api/v1/products/3"/>
-            <product id="4" main_title="The Little Schemer" record_reference="993140a24d8202a347cc" url="#{FAKE_API_HOST}/api/v1/products/4"/>
-            <product id="5" main_title="The Rails Way" record_reference="a40f41cf67facf1876e3" url="#{FAKE_API_HOST}/api/v1/products/5"/>
+            <product main_title="Erlang Programming" record_reference="04325b31fdece145d22e" url="#{FAKE_API_HOST}/api/v1/products/04325b31fdece145d22e"/>
+            <product main_title="The Little Schemer" record_reference="993140a24d8202a347cc" url="#{FAKE_API_HOST}/api/v1/products/993140a24d8202a347cc"/>
+            <product main_title="The Rails Way" record_reference="a40f41cf67facf1876e3" url="#{FAKE_API_HOST}/api/v1/products/a40f41cf67facf1876e3"/>
           </products>
         </publisher>
       XML
@@ -366,20 +366,20 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
       assert_equal 3, products.size
       assert(products.all? { |product| product.kind_of? Elibri::ApiClient::ApiAdapters::V1::Product })
 
-      erlang_programming = products.find {|product| product.product_id == 3}
+      erlang_programming = products.find {|product| product.record_reference == '04325b31fdece145d22e'}
       assert_equal 'Erlang Programming', erlang_programming.main_title
       assert_equal '04325b31fdece145d22e', erlang_programming.record_reference
-      assert_equal "#{FAKE_API_HOST}/api/v1/products/3", erlang_programming.url
+      assert_equal "#{FAKE_API_HOST}/api/v1/products/04325b31fdece145d22e", erlang_programming.url
     end
   end
 
 
   describe "when asked to product ONIX XML for specified product" do
     before do
-      @product = Elibri::ApiClient::ApiAdapters::V1::Product.new(@adapter, stub('publisher'), :product_id => 1234)
+      @product = Elibri::ApiClient::ApiAdapters::V1::Product.new(@adapter, stub('publisher'), :record_reference => '076eb83a5f01cb03a217')
       xml = %Q{<Product><RecordReference>076eb83a5f01cb03a217</RecordReference></Product>}
       response_stub = stub('response_stub', :code => 200, :parsed_response => Nokogiri::XML(xml))
-      get_request_expected("#{FAKE_API_HOST}/api/v1/products/1234").at_least_once.returns(response_stub)
+      get_request_expected("#{FAKE_API_HOST}/api/v1/products/076eb83a5f01cb03a217").at_least_once.returns(response_stub)
     end
 
 
