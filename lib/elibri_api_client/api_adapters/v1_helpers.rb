@@ -194,16 +194,16 @@ module Elibri #:nodoc:
           # Unikalny identyfikator produktu w ONIX
           attr_reader :record_reference
           # Tytul produktu
-          attr_reader :main_title
+          attr_reader :title
           # Entrypoint API, pod ktorym mozna pobrac ONIX produktu
           attr_reader :url
 
           def initialize(api_adapter, publisher, attributes = {}) #:nodoc:
-            attributes.assert_valid_keys(:record_reference, :main_title, :url)
+            attributes.assert_valid_keys(:record_reference, :title, :url)
             @api_adapter = api_adapter
             @publisher = publisher
             @record_reference = attributes[:record_reference]
-            @main_title = attributes[:main_title]
+            @title = attributes[:title]
             @url = attributes[:url]
           end
 
@@ -223,7 +223,7 @@ module Elibri #:nodoc:
             Product.new(api_adapter, publisher,
               :record_reference => product_xml['record_reference'],
               :url => product_xml['url'],
-              :main_title => product_xml['main_title']
+              :title => product_xml['title']
             )
           end
 

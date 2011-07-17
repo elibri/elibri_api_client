@@ -11,7 +11,7 @@
   elibri.publishers.each do |publisher|
     puts "#{publisher.name}, #{publisher.city} (#{publisher.products_count} produktow)"
     publisher.products.each_with_index do |product, product_no|
-      puts "\t#{product_no}. #{product.main_title}"
+      puts "\t#{product_no}. #{product.title}"
       # puts product.onix_xml
     end
   end

@@ -350,9 +350,9 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
       xml = <<-XML
         <publisher id="#{@publisher.publisher_id}" name="Wydawnicta Naukowo-Techniczne">
           <products count="3" url="#{FAKE_API_HOST}/api/v1/publishers/#{@publisher.publisher_id}/products">
-            <product main_title="Erlang Programming" record_reference="04325b31fdece145d22e" url="#{FAKE_API_HOST}/api/v1/products/04325b31fdece145d22e"/>
-            <product main_title="The Little Schemer" record_reference="993140a24d8202a347cc" url="#{FAKE_API_HOST}/api/v1/products/993140a24d8202a347cc"/>
-            <product main_title="The Rails Way" record_reference="a40f41cf67facf1876e3" url="#{FAKE_API_HOST}/api/v1/products/a40f41cf67facf1876e3"/>
+            <product title="Erlang Programming" record_reference="04325b31fdece145d22e" url="#{FAKE_API_HOST}/api/v1/products/04325b31fdece145d22e"/>
+            <product title="The Little Schemer" record_reference="993140a24d8202a347cc" url="#{FAKE_API_HOST}/api/v1/products/993140a24d8202a347cc"/>
+            <product title="The Rails Way" record_reference="a40f41cf67facf1876e3" url="#{FAKE_API_HOST}/api/v1/products/a40f41cf67facf1876e3"/>
           </products>
         </publisher>
       XML
@@ -367,7 +367,7 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
       assert(products.all? { |product| product.kind_of? Elibri::ApiClient::ApiAdapters::V1::Product })
 
       erlang_programming = products.find {|product| product.record_reference == '04325b31fdece145d22e'}
-      assert_equal 'Erlang Programming', erlang_programming.main_title
+      assert_equal 'Erlang Programming', erlang_programming.title
       assert_equal '04325b31fdece145d22e', erlang_programming.record_reference
       assert_equal "#{FAKE_API_HOST}/api/v1/products/04325b31fdece145d22e", erlang_programming.url
     end
