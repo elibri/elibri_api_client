@@ -13,13 +13,13 @@ describe Elibri::ApiClient::ApiAdapters::V1::Publisher do
       :name => 'Wydawnicta Naukowo-Techniczne',
       :publisher_id => '1020',
       :products_count => 1503,
-      :products_url => 'http://api.elibri.com.pl/api/v1/publishers/1020/products'
+      :products_url => 'http://www.elibri.com.pl/api/v1/publishers/1020/products'
     )
 
     assert_equal 'Wydawnicta Naukowo-Techniczne', publisher.name 
     assert_equal 1020, publisher.publisher_id
     assert_equal 1503, publisher.products_count
-    assert_equal 'http://api.elibri.com.pl/api/v1/publishers/1020/products', publisher.products_url
+    assert_equal 'http://www.elibri.com.pl/api/v1/publishers/1020/products', publisher.products_url
   end
   
 
@@ -28,7 +28,7 @@ describe Elibri::ApiClient::ApiAdapters::V1::Publisher do
     xml = %Q{
       <publishers>
         <publisher name="Wydawnicta Naukowo-Techniczne" city="Kraków" company_name="WNT Polska Sp. z o.o." zip_code="30-417" id="1" street="Łagiewnicka 33a" phone1="(12) 252-85-92" phone2="(12) 252-85-80" nip="679-284-08-64" www="http://www.wnt.com" email="sprzedaz@wnt.com">
-          <products url="http://api.elibri.com.pl/api/v1/publishers/1/products" count="350"/>
+          <products url="http://www.elibri.com.pl/api/v1/publishers/1/products" count="350"/>
         </publisher>
       </publishers>
     }
@@ -47,7 +47,7 @@ describe Elibri::ApiClient::ApiAdapters::V1::Publisher do
     assert_equal "679-284-08-64", publisher.nip
     assert_equal "http://www.wnt.com", publisher.www
     assert_equal "sprzedaz@wnt.com", publisher.email
-    assert_equal 'http://api.elibri.com.pl/api/v1/publishers/1/products', publisher.products_url
+    assert_equal 'http://www.elibri.com.pl/api/v1/publishers/1/products', publisher.products_url
   end
 
 

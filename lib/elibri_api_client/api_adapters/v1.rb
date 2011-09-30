@@ -11,7 +11,7 @@ module Elibri
 
         include HTTParty
         #--
-        #debug_output $stderr
+        # debug_output $stderr
         #++
 
         def initialize(host_uri, login, password) #:nodoc:
@@ -37,7 +37,7 @@ module Elibri
         #   pending_queues -> array
         #
         def pending_queues
-          resp = get '/queues/pending_data'
+          resp = get '/queues'
 
           Array.new.tap do |pending_queues|
             resp.parsed_response.css('queue').each do |queue_xml|
@@ -57,25 +57,6 @@ module Elibri
         end
 
 
-        # Ostatnio utworzone nazwane kolejki. Gdy wysypie nam sie aplikacja, mozna przegladac ostatnie pickupy
-        # i ponownie pobierac z nich dane. Zwraca instance Elibri::ApiClient::ApiAdapters::V1::Queue
-        # call-seq:
-        #   last_pickups -> array
-        #
-        def last_pickups
-          Array.new.tap do |last_pickups|
-            %w{meta stocks}.each do |queue_name|
-              begin
-                response = get "/queues/#{queue_name}/last_pick_up"
-                queue_xml = response.parsed_response.css('queue').first
-                last_pickups << Elibri::ApiClient::ApiAdapters::V1::Queue.build_from_xml(self, queue_xml)
-              rescue Exceptions::NoRecentlyPickedUpQueues # Ignoruj bledy o braku ostatnich pickupow.
-              end
-            end  
-          end
-        end
-
-
         # Zwroc liste dostepnych wydawnictw - instancje Elibri::ApiClient::ApiAdapters::V1::Publisher
         # call-seq:
         #   publishers -> array
@@ -92,51 +73,22 @@ module Elibri
         end
 
 
-        # Utworz z danych oczekujacych w kolejce np. 'pending_meta', kolejke nazwana.
-        # Tylko z kolejek nazwanych mozna pobierac dane. Jako argument przyjmuje nazwe kolejki (np. 'pending_meta')
-        # lub odpowiednia instancje Elibri::ApiClient::ApiAdapters::V1::Queue.
-        def pick_up_queue!(queue) #:nodoc:
-          case queue
-            when Elibri::ApiClient::ApiAdapters::V1::Queue
-              queue_name = queue.name
-            when String
-              queue_name = queue
-            else
-              raise 'Specify queue as name or Elibri::ApiClient::ApiAdapters::V1::Queue instance'
-          end
-
-          response = post "/queues/#{queue_name}/pick_up", :body => ' '
-          picked_up_queue_xml = response.parsed_response.css('pick_up queue').first
-          Elibri::ApiClient::ApiAdapters::V1::Queue.build_from_xml(self, picked_up_queue_xml)
+        # Options moze przyjac {:testing => 1, :count => 100}
+        def pop_from_queue(queue_name, options = {})
+          options[:testing] = 1 if options[:testing]
+          options = ' ' if options.empty?
+          response = post "/queues/#{queue_name}/pop", :body => options
+          pop_xml = response.parsed_response.css('pop').first
+          Elibri::ApiClient::ApiAdapters::V1::QueuePop.build_from_xml(pop_xml)
         end
 
 
-        def each_page_in_queue(queue, &block) #:nodoc:
-          raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Queue instance' unless queue.kind_of? Elibri::ApiClient::ApiAdapters::V1::Queue
-          
-          page_no = 1
-          response = get "/queues/#{queue.name}/#{queue.queue_id}"
-          yield response.parsed_response.css('current_page content'), page_no
-          while next_page = response.parsed_response.css('next_page').first
-            response = get next_page['url']
-            page_no += 1
-            yield response.parsed_response.css('current_page content').first, page_no
-          end
-        end
-
-
-        # Trawersuj kolekcje produktow w nazwanej kolejce. Instancje nazwanej kolejki nalezy przekazac
-        # jako argument metody.
-        def each_product_onix_in_queue(queue, &block) #:nodoc:
-          raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Queue instance' unless queue.kind_of? Elibri::ApiClient::ApiAdapters::V1::Queue
-
-          product_no = 1
-          each_page_in_queue(queue) do |products_page_xml, page_no|
-            products_page_xml.css('Product').each do |product_xml|
-              block.call(product_xml, product_no)
-              product_no += 1
-            end  
-          end
+        def last_pop_from_queue(queue_name)
+          response = get "/queues/#{queue_name}/last_pop"
+          pop_xml = response.parsed_response.css('pop').first
+          Elibri::ApiClient::ApiAdapters::V1::QueuePop.build_from_xml(pop_xml)
+        rescue Exceptions::NoRecentlyPoppedData # Ignoruj bledy o braku ostatnich POPow.
+          return nil
         end
 
 
@@ -164,7 +116,7 @@ module Elibri
 
         private
 
-          # http://api.elibri.com.pl:80/api/v1
+          # http://www.elibri.com.pl:80/api/v1
           def full_api_uri
             @host_uri + URI_PREFIX 
           end

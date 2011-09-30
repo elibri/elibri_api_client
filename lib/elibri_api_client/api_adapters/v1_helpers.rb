@@ -13,10 +13,8 @@ module Elibri #:nodoc:
           class NotFound < RuntimeError; end
           class Forbidden < RuntimeError; end
           class ServerError < RuntimeError; end
-          class NoPendingData < RuntimeError; end
-          class NoRecentlyPickedUpQueues < RuntimeError; end
           class QueueDoesNotExists < RuntimeError; end
-          class InvalidPageNumber < RuntimeError; end
+          class NoRecentlyPoppedData < RuntimeError; end
         end
 
         # Klasy wyjatkow rzucanych, gdy elibri zwroci okreslony blad. Np. gdy dostaniemy:
@@ -29,9 +27,7 @@ module Elibri #:nodoc:
           '403' =>  Exceptions::Forbidden,
           '500' =>  Exceptions::ServerError,
           '1001' => Exceptions::QueueDoesNotExists,
-          '1002' => Exceptions::NoPendingData,
-          '1003' => Exceptions::NoRecentlyPickedUpQueues,
-          '1004' => Exceptions::InvalidPageNumber
+          '1002' => Exceptions::NoRecentlyPoppedData,
         }.freeze
 
 
@@ -41,52 +37,36 @@ module Elibri #:nodoc:
           attr_reader :name
           # Ilosc produktow znajdujacych sie w kolejce
           attr_reader :products_count
-          # Kiedy kolejka zostala przekonwertowana na nazwana? (otrzymala ID w bazie)
-          attr_reader :picked_up_at
           # Kiedy ostatnio umieszczono jakis produkt w kolejce?
           attr_reader :last_insert_at
-          # Unikalny identyfikator kolejki w bazie
-          attr_reader :queue_id
-          # Entrypoint API, pod ktorym mozna zobaczyc zawartosc kolejki
-          attr_reader :url
 
 
           def initialize(api_adapter, attributes = {}) #:nodoc:
-            attributes.assert_valid_keys(:name, :products_count, :queue_id, :url, :last_insert_at, :picked_up_at)
+            attributes.assert_valid_keys(:name, :products_count, :last_insert_at)
             @api_adapter = api_adapter
             @name = attributes[:name]
             @products_count = attributes[:products_count].to_i
-            @queue_id = attributes[:queue_id]
-            @url = attributes[:url]
-
             @last_insert_at = Time.parse(attributes[:last_insert_at]) if attributes[:last_insert_at].present?
-            @picked_up_at = Time.parse(attributes[:picked_up_at]) if attributes[:picked_up_at].present?
           end
 
 
-          # Przekonwertuj kolejke z danymi oczekujacymi (np. 'pending_meta') na kolejke nazwana.
-          # call-seq:
-          #   pick_up! -> named_queue_instance
-          #
-          def pick_up!
-            @api_adapter.pick_up_queue!(self) unless picked_up?
+          # Pobierz dane z kolejki
+          def pop(options = {})
+            @api_adapter.pop_from_queue(self.name, options)
+          end
+
+
+          # Zwroc ostatnio pobrane dane z tej kolejki
+          def last_pop
+            @api_adapter.last_pop_from_queue(self.name)
           end
 
 
           # Iteruj po kolejnych rekordach ONIX w nazwanej kolejce.
-          def each_product_onix(&block) #:yields: product_xml
-            raise 'Cannot iterate unpicked queue products! Try named = queue.pick_up! and then named.each_product_onix' unless self.picked_up?
-            @api_adapter.each_product_onix_in_queue(self, &block)
-          end
-
-
-          # Czy to jest kolejka nazwana, czy oczekujaca? Wszystkie kolejki z danymi oczekujacymi maja w nazwie
-          # przedrostek 'pending_'. Np. 'pending_meta', 'pending_stocks'.
-          # call-seq:
-          #   picked_up? -> true or false
-          #
-          def picked_up?
-            !self.name.start_with?('pending_')
+          def each_product(&block) #:yields: product_xml
+            while (_pop = pop).popped_products_count > 0
+              _pop.each_product(&block)
+            end
           end
 
 
@@ -96,12 +76,49 @@ module Elibri #:nodoc:
             Queue.new(api_adapter,
               :name => queue_xml['name'],
               :products_count => queue_xml['products_count'].to_i,
-              :last_insert_at => queue_xml['last_insert_at'],
-              :url => queue_xml['url'],
-              :queue_id => queue_xml['id'],
-              :picked_up_at => queue_xml['picked_up_at']
+              :last_insert_at => queue_xml['last_insert_at']
             )
           end
+        end
+
+
+
+        class QueuePop
+          # Nazwa kolejki ktorej dotyczyl POP
+          attr_reader :queue_name
+          # Ilosc produktow pobranych w tym POPie
+          attr_reader :popped_products_count
+          # Kiedy POP zostal wykonany?
+          attr_reader :created_at
+          # ONIX pobranych produktow
+          attr_reader :products_xmls
+
+
+          def initialize(attributes = {}) #:nodoc:
+            attributes.assert_valid_keys(:queue_name, :popped_products_count, :created_at, :products_xmls)
+            @queue_name = attributes[:queue_name]
+            @popped_products_count = attributes[:popped_products_count].to_i
+            @products_xmls = attributes[:products_xmls]
+            @created_at = Time.parse(attributes[:created_at])
+          end
+
+
+          def each_product(&block)
+            @products_xmls.each(&block)
+          end
+
+
+          # Zbuduj instancje na podstawie XML`a.
+          def self.build_from_xml(pop_xml) #:nodoc:
+            pop_xml = Nokogiri::XML(pop_xml).css('pop').first if pop_xml.is_a? String
+            QueuePop.new(
+              :queue_name => pop_xml['queue_name'],
+              :popped_products_count => pop_xml['popped_products_count'].to_i,
+              :created_at => pop_xml['created_at'],
+              :products_xmls => pop_xml.css('Product')
+            )
+          end
+
         end
 
 
@@ -186,6 +203,7 @@ module Elibri #:nodoc:
           end
 
         end
+
 
 
         class Product

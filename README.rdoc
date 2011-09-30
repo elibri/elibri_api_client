@@ -29,21 +29,26 @@
   # elibri.refill_all_queues!
 
   elibri.pending_queues.each do |pending_queue|
-    # Aby moc pobierac dane, musimy kolejke oczekujaca przekonwertowac na kolejke nazwana.
-    # Taka kolejke identyfikujemy po ID i jej tresc pozniej nie ulega zmianie.
-    named_queue = pending_queue.pick_up!
-
-    # Majac kolejke nazwana, mozemy iterowac po jej produktach (ONIX):
-    named_queue.each_product_onix do |product_xml, product_no|
+    pending_queue.each_product do |product_xml|
       # Otrzymujemy przeparsowany XML za pomoca Nokogiri
       # product_xml.class => Nokogiri::XML::Element
 
-      puts product.xml.css('RecordReference')
+      puts product_xml.css('RecordReference').text
     end
   end
 
-==== 3b. Znadz ostatnio pobrane kolejki
-  named_queue = elibri.last_pickups.first
+==== 3b. Pobieranie danych z konkretnej kolejki
+
+  meta = elibri.pending_queues.find {|queue| queue.name == 'meta'}
+
+  pop = meta.pop(:count => 5, :testing => true)
+  pop.each_product {|product_xml| puts product_xml.css('RecordReference').text }
+
+  last_pop = meta.last_pop
+
+
+==== 3c. Znadz ostatnio pobrane kolejki
+  last_pop = elibri.last_pop_from_queue('meta')
 
 
 == Copyright

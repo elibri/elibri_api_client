@@ -5,7 +5,7 @@ gem "nokogiri", "~> 1.5.0"
 gem 'activesupport', '>= 3.1.0.rc1'
 
 group :development do
-  gem "ruby-debug"
+  gem "pry"
   gem "mocha"
   gem "minitest", ">= 0"
   gem "bundler", "~> 1.0.0"

@@ -10,8 +10,7 @@ end
 require 'test/unit'
 require 'minitest/autorun'
 require 'mocha'
-require 'ruby-debug'
-Debugger.settings[:autoeval] = true rescue nil
+require 'pry'
 
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 $LOAD_PATH.unshift(File.dirname(__FILE__))

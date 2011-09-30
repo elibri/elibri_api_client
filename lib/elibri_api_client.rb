@@ -17,7 +17,7 @@ module Elibri
     extend Forwardable
 
     # Domyslny adres serwera API
-    DEFAULT_API_HOST_URI = 'http://api.elibri.com.pl:80'
+    DEFAULT_API_HOST_URI = 'http://www.elibri.com.pl:80'
     # Adres hosta, pod ktorym figuruje serwer API - domyslnie to DEFAULT_API_HOST_URI
     attr_reader :host_uri
 
@@ -40,7 +40,7 @@ module Elibri
 
 
     # Metody API delegujemy do odpowiedniego adaptera:
-    def_delegators :@api_adapter, :refill_all_queues!, :pending_data?, :pending_queues, :last_pickups, :publishers
+    def_delegators :@api_adapter, :refill_all_queues!, :pending_data?, :pending_queues, :publishers, :last_pop_from_queue
 
   end
 end
