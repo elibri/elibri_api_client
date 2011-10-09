@@ -5,30 +5,31 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
 
   FAKE_API_HOST = 'http://localhost:5000'
 
-  def get_request_expected(request_uri)
+  def get_request_expected(request_uri, options = {})
     Elibri::ApiClient::ApiAdapters::V1.expects(:get).with(
       request_uri,
-      {:digest_auth => {:username => 'login', :password => 'password'}}
+      {:digest_auth => {:username => 'login', :password => 'password'}}.merge(options)
     )
   end
 
 
   def post_request_expected(request_uri, options = {})
-    options = ' ' if options.empty?
+    options[:body] = ' ' unless options[:body]
+
     Elibri::ApiClient::ApiAdapters::V1.expects(:post).with(
       request_uri,
-      {:body => options, :digest_auth => {:username => 'login', :password => 'password'}}
+      {:digest_auth => {:username => 'login', :password => 'password'}}.merge(options)
     )
   end
 
 
   before do
-    @adapter = Elibri::ApiClient::ApiAdapters::V1.new(FAKE_API_HOST, 'login', 'password')
+    @adapter = Elibri::ApiClient::ApiAdapters::V1.new(FAKE_API_HOST, 'login', 'password', '3.0.1')
   end
 
 
   it "should define several exception classes" do
-    exception_classes = %w{Unauthorized NotFound Forbidden ServerError QueueDoesNotExists NoRecentlyPoppedData}
+    exception_classes = %w{Unauthorized NotFound Forbidden ServerError QueueDoesNotExists NoRecentlyPoppedData InvalidOnixDialect}
     exception_classes.each do |exception_class|
       assert(Elibri::ApiClient::ApiAdapters::V1::Exceptions.const_get(exception_class) < RuntimeError)
     end  
@@ -121,6 +122,7 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
         '500' =>  Elibri::ApiClient::ApiAdapters::V1::Exceptions::ServerError,
         '1001' => Elibri::ApiClient::ApiAdapters::V1::Exceptions::QueueDoesNotExists,
         '1002' => Elibri::ApiClient::ApiAdapters::V1::Exceptions::NoRecentlyPoppedData,
+        '1003' => Elibri::ApiClient::ApiAdapters::V1::Exceptions::InvalidOnixDialect,
       }
     end
 
@@ -220,7 +222,7 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
       @product = Elibri::ApiClient::ApiAdapters::V1::Product.new(@adapter, stub('publisher'), :record_reference => '076eb83a5f01cb03a217')
       xml = %Q{<Product><RecordReference>076eb83a5f01cb03a217</RecordReference></Product>}
       response_stub = stub('response_stub', :code => 200, :parsed_response => Nokogiri::XML(xml))
-      get_request_expected("#{FAKE_API_HOST}/api/v1/products/076eb83a5f01cb03a217").at_least_once.returns(response_stub)
+      get_request_expected("#{FAKE_API_HOST}/api/v1/products/076eb83a5f01cb03a217", :headers => {'X-eLibri-API-ONIX-dialect' => '3.0.1'}).at_least_once.returns(response_stub)
     end
 
 
@@ -237,45 +239,85 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
   describe "when asked to pop data from specified queue name" do
 
     before do
-      xml = <<-XML
-        <pop created_at="2011-09-06 13:58:21 UTC" queue_name="meta" popped_products_count="2">
-          <ONIXMessage release="3.0">
-            <Header>
-              <Sender>
-                <SenderName>Elibri.com.pl</SenderName>
-                <ContactName>Tomasz Meka</ContactName>
-                <EmailAddress>kontakt@elibri.com.pl</EmailAddress>
-              </Sender>
-              <SentDateTime>20110906</SentDateTime>
-            </Header>
-
-            <Product>
-            </Product>
-            <Product>
-            </Product>
-          </ONIXMessage>
-        </pop>
+      @xml = <<-XML
+        <?xml version="1.0" encoding="UTF-8"?>
+        <ONIXMessage release="3.0" xmlns:elibri="http://elibri.com.pl/ns/extensions" xmlns="http://www.editeur.org/onix/3.0/reference">
+          <elibri:Dialect>3.0.1</elibri:Dialect>
+          <Header>
+            <Sender>
+              <SenderName>Elibri.com.pl</SenderName>
+              <ContactName>Tomasz Meka</ContactName>
+              <EmailAddress>kontakt@elibri.com.pl</EmailAddress>
+            </Sender>
+            <SentDateTime>20111009</SentDateTime>
+          </Header>
+          <Product>
+            <RecordReference>fdb8fa072be774d97a97</RecordReference>
+          </Product>
+          <Product>
+            <RecordReference>6de1bed2f70a8cdae200</RecordReference>
+          </Product>
+        </ONIXMessage>
       XML
-
-      @response_stub = stub('response_stub', :code => 200, :parsed_response => Nokogiri::XML(xml))
     end
 
 
     it "should send params when they are specified and return QueuePop instance" do
-      post_request_expected("#{FAKE_API_HOST}/api/v1/queues/meta/pop", :testing => 1, :count => 5).at_least_once.returns(@response_stub)
+      @response_stub = stub('response_stub',
+        :code => 200,
+        :body => @xml,
+        :parsed_response => Nokogiri::XML(@xml),
+        :headers => {"x-elibri-api-pop-products-count" => 2, "x-elibri-api-pop-queue-name" => "meta", "x-elibri-api-pop-created-at" => "2011-09-06 13:58:21 UTC"}
+      )
+
+      post_request_expected(
+        "#{FAKE_API_HOST}/api/v1/queues/meta/pop",
+        :body => {:testing => 1, :count => 5},
+        :headers => {'X-eLibri-API-ONIX-dialect' => '3.0.1'}
+      ).at_least_once.returns(@response_stub)
 
       pop = @adapter.pop_from_queue('meta', :testing => true, :count => 5)
+      assert_kind_of Elibri::ApiClient::ApiAdapters::V1::QueuePop, pop
+      assert_equal 2, pop.popped_products_count
+      assert_equal 'fdb8fa072be774d97a97', pop.onix.products.first.record_reference
+    end
+
+
+    it "should send empty request body when no params are specified" do
+      @response_stub = stub('response_stub',
+        :code => 200,
+        :body => @xml,
+        :parsed_response => Nokogiri::XML(@xml),
+        :headers => {"x-elibri-api-pop-products-count" => 2, "x-elibri-api-pop-queue-name" => "meta", "x-elibri-api-pop-created-at" => "2011-09-06 13:58:21 UTC"}
+      )
+
+      post_request_expected(
+        "#{FAKE_API_HOST}/api/v1/queues/meta/pop",
+        :body => ' ',
+        :headers => {'X-eLibri-API-ONIX-dialect' => '3.0.1'}
+      ).at_least_once.returns(@response_stub)
+
+      pop = @adapter.pop_from_queue('meta')
       assert_kind_of Elibri::ApiClient::ApiAdapters::V1::QueuePop, pop
       assert_equal 2, pop.popped_products_count
     end
 
 
-    it "should send empty request body when no params are specified" do
-      post_request_expected("#{FAKE_API_HOST}/api/v1/queues/meta/pop").at_least_once.returns(@response_stub)
+    it "should return nil when there is no data to pop" do
+      @response_stub = stub('response_stub',
+        :code => 200,
+        :body => nil,
+        :parsed_response => nil,
+        :headers => {"x-elibri-api-pop-products-count" => 0}
+      )
 
-      pop = @adapter.pop_from_queue('meta')
-      assert_kind_of Elibri::ApiClient::ApiAdapters::V1::QueuePop, pop
-      assert_equal 2, pop.popped_products_count
+      post_request_expected(
+        "#{FAKE_API_HOST}/api/v1/queues/meta/pop",
+        :body => ' ',
+        :headers => {'X-eLibri-API-ONIX-dialect' => '3.0.1'}
+      ).at_least_once.returns(@response_stub)
+
+      assert_nil @adapter.pop_from_queue('meta')
     end
 
   end
@@ -287,7 +329,7 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
       before do
         xml = %q{<error id='1002'> <message>There is no recently popped data</message> </error>}
         response_stub = stub('response_stub', :code => 412, :parsed_response => Nokogiri::XML(xml))
-        get_request_expected("#{FAKE_API_HOST}/api/v1/queues/meta/last_pop").once.returns(response_stub)
+        get_request_expected("#{FAKE_API_HOST}/api/v1/queues/meta/last_pop", :headers => {'X-eLibri-API-ONIX-dialect' => '3.0.1'}).once.returns(response_stub)
       end
 
       it "should return nil, ignoring NoRecentlyPoppedData exception" do
@@ -299,36 +341,42 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
     describe "and there was a pop" do
 
       before do
-        xml = <<-XML
-          <pop created_at="2011-09-06 13:58:21 UTC" queue_name="meta" popped_products_count="2">
-            <ONIXMessage release="3.0">
-              <Header>
-                <Sender>
-                  <SenderName>Elibri.com.pl</SenderName>
-                  <ContactName>Tomasz Meka</ContactName>
-                  <EmailAddress>kontakt@elibri.com.pl</EmailAddress>
-                </Sender>
-                <SentDateTime>20110906</SentDateTime>
-              </Header>
-
-              <Product>
-              </Product>
-              <Product>
-              </Product>
-            </ONIXMessage>
-          </pop>
+        @xml = <<-XML
+          <?xml version="1.0" encoding="UTF-8"?>
+          <ONIXMessage release="3.0" xmlns:elibri="http://elibri.com.pl/ns/extensions" xmlns="http://www.editeur.org/onix/3.0/reference">
+            <elibri:Dialect>3.0.1</elibri:Dialect>
+            <Header>
+              <Sender>
+                <SenderName>Elibri.com.pl</SenderName>
+                <ContactName>Tomasz Meka</ContactName>
+                <EmailAddress>kontakt@elibri.com.pl</EmailAddress>
+              </Sender>
+              <SentDateTime>20111009</SentDateTime>
+            </Header>
+            <Product>
+              <RecordReference>fdb8fa072be774d97a97</RecordReference>
+            </Product>
+            <Product>
+              <RecordReference>6de1bed2f70a8cdae200</RecordReference>
+            </Product>
+          </ONIXMessage>
         XML
-
-        @response_stub = stub('response_stub', :code => 200, :parsed_response => Nokogiri::XML(xml))
       end
 
 
       it "should return QueuePop instance" do
-        get_request_expected("#{FAKE_API_HOST}/api/v1/queues/meta/last_pop").at_least_once.returns(@response_stub)
+        response_stub = stub('response_stub',
+          :code => 200,
+          :body => @xml,
+          :parsed_response => Nokogiri::XML(@xml),
+          :headers => {"x-elibri-api-pop-products-count" => 2, "x-elibri-api-pop-queue-name" => "meta", "x-elibri-api-pop-created-at" => "2011-09-06 13:58:21 UTC"}
+        )
+        get_request_expected("#{FAKE_API_HOST}/api/v1/queues/meta/last_pop", :headers => {'X-eLibri-API-ONIX-dialect' => '3.0.1'}).at_least_once.returns(response_stub)
 
         pop = @adapter.last_pop_from_queue('meta')
         assert_kind_of Elibri::ApiClient::ApiAdapters::V1::QueuePop, pop
         assert_equal 2, pop.popped_products_count
+        assert_equal 'fdb8fa072be774d97a97', pop.onix.products.first.record_reference
       end
     end
 

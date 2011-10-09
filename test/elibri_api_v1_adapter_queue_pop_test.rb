@@ -5,15 +5,22 @@ require 'helper'
 describe Elibri::ApiClient::ApiAdapters::V1::QueuePop do
 
   before do
-    @products_xmls = Nokogiri::XML(<<-XML).css('Product')
-      <root>
+    @xml = <<-XML.strip_heredoc
+      <?xml version="1.0" encoding="UTF-8"?>
+      <ONIXMessage release="3.0" xmlns:elibri="http://elibri.com.pl/ns/extensions" xmlns="http://www.editeur.org/onix/3.0/reference">
+        <elibri:Dialect>3.0.1</elibri:Dialect>
+        <Header>
+          <Sender>
+            <SenderName>Elibri.com.pl</SenderName>
+            <ContactName>Tomasz Meka</ContactName>
+            <EmailAddress>kontakt@elibri.com.pl</EmailAddress>
+          </Sender>
+          <SentDateTime>20111009</SentDateTime>
+        </Header>
         <Product>
-          <RecordReference>123</RecordReference>
+          <RecordReference>fdb8fa072be774d97a97</RecordReference>
         </Product>
-        <Product>
-          <RecordReference>456</RecordReference>
-        </Product>
-      </root>
+      </ONIXMessage>
     XML
   end
 
@@ -24,42 +31,15 @@ describe Elibri::ApiClient::ApiAdapters::V1::QueuePop do
       :queue_name => 'meta',
       :popped_products_count => 120,
       :created_at => time.to_s,
-      :products_xmls => @products_xmls
+      :xml => @xml
     )
 
     assert_equal 'meta', queue_pop.queue_name 
     assert_equal 120, queue_pop.popped_products_count 
     assert_equal time.to_i, queue_pop.created_at.to_i
-    assert_equal @products_xmls, queue_pop.products_xmls
-  end
-  
-
-  it "should be able to build itself from provided XML" do
-    xml = <<-XML
-      <pop queue_name="meta" popped_products_count="1500" created_at="2011-02-05 21:02:22 UTC">
-        #{@products_xmls.to_s}
-      </pop>
-    XML
-
-    queue_pop = Elibri::ApiClient::ApiAdapters::V1::QueuePop.build_from_xml(xml)
-    assert_equal 'meta', queue_pop.queue_name 
-    assert_equal 1500, queue_pop.popped_products_count
-    assert_equal Time.parse("2011-02-05 21:02:22 UTC"), queue_pop.created_at 
-    assert_equal 2, queue_pop.products_xmls.size
-  end
-  
-
-  it "should provide iterator for traversing products list" do
-    xml = <<-XML
-      <pop queue_name="meta" popped_products_count="1500" created_at="2011-02-05 21:02:22 UTC">
-        #{@products_xmls.to_s}
-      </pop>
-    XML
-
-    queue_pop = Elibri::ApiClient::ApiAdapters::V1::QueuePop.build_from_xml(xml)
-    record_references = []
-    queue_pop.each_product {|product_xml| record_references << product_xml.css('RecordReference').text  }
-    assert_equal ['123', '456'], record_references
+    assert_equal @xml, queue_pop.xml
+    assert_kind_of Elibri::ONIX::Release_3_0::ONIXMessage, queue_pop.onix
+    assert_equal 'fdb8fa072be774d97a97', queue_pop.onix.products.first.record_reference
   end
   
 

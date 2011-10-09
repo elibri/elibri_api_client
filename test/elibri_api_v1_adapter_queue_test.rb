@@ -46,16 +46,15 @@ describe Elibri::ApiClient::ApiAdapters::V1::Queue do
   end
   
 
-  it "should provide iterator for traversing products list" do
+  it "should provide iterator for traversing through each pop" do
     queue = Elibri::ApiClient::ApiAdapters::V1::Queue.new(@api_adapter, :name => 'meta')
-    pop_with_products = mock('QueuePop', :popped_products_count => 10)
-    pop_with_products.expects(:each_product)
+    pop_with_products = stub('QueuePop', :popped_products_count => 5)
+    pop_with_products2 = stub('QueuePop', :popped_products_count => 3)
+    queue.expects(:pop).with(:count => 5).returns(pop_with_products).then.returns(pop_with_products2).then.returns(nil).times(3)
 
-    pop_without_products = mock('QueuePop', :popped_products_count => 0)
-    pop_without_products.expects(:each_product).never
-    queue.expects(:pop).returns(pop_with_products).then.returns(pop_without_products).twice
-
-    queue.each_product {|product_xml| product_xml.css('RecordReference')  }
+    pops = []
+    queue.each_pop(:count => 5) {|pop| pops << pop  }
+    assert_equal [pop_with_products, pop_with_products2], pops
   end
   
 

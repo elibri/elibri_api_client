@@ -15,6 +15,7 @@ module Elibri #:nodoc:
           class ServerError < RuntimeError; end
           class QueueDoesNotExists < RuntimeError; end
           class NoRecentlyPoppedData < RuntimeError; end
+          class InvalidOnixDialect < RuntimeError; end
         end
 
         # Klasy wyjatkow rzucanych, gdy elibri zwroci okreslony blad. Np. gdy dostaniemy:
@@ -28,6 +29,7 @@ module Elibri #:nodoc:
           '500' =>  Exceptions::ServerError,
           '1001' => Exceptions::QueueDoesNotExists,
           '1002' => Exceptions::NoRecentlyPoppedData,
+          '1003' => Exceptions::InvalidOnixDialect,
         }.freeze
 
 
@@ -62,10 +64,10 @@ module Elibri #:nodoc:
           end
 
 
-          # Iteruj po kolejnych rekordach ONIX w nazwanej kolejce.
-          def each_product(&block) #:yields: product_xml
-            while (_pop = pop).popped_products_count > 0
-              _pop.each_product(&block)
+          # Iteruj po kolejnych POP`ach w nazwanej kolejce.
+          def each_pop(options = {}, &block) #:yields: QueuePop
+            while _pop = pop(options)
+              yield _pop
             end
           end
 
@@ -90,33 +92,19 @@ module Elibri #:nodoc:
           attr_reader :popped_products_count
           # Kiedy POP zostal wykonany?
           attr_reader :created_at
-          # ONIX pobranych produktow
-          attr_reader :products_xmls
+          # Pelna tresc ONIX - lacznie z naglowkiem
+          attr_reader :xml
+          # ONIX przeparsowany za pomoca gemu elibri_onix
+          attr_reader :onix
 
 
           def initialize(attributes = {}) #:nodoc:
-            attributes.assert_valid_keys(:queue_name, :popped_products_count, :created_at, :products_xmls)
+            attributes.assert_valid_keys(:queue_name, :popped_products_count, :created_at, :xml)
             @queue_name = attributes[:queue_name]
             @popped_products_count = attributes[:popped_products_count].to_i
-            @products_xmls = attributes[:products_xmls]
-            @created_at = Time.parse(attributes[:created_at])
-          end
-
-
-          def each_product(&block)
-            @products_xmls.each(&block)
-          end
-
-
-          # Zbuduj instancje na podstawie XML`a.
-          def self.build_from_xml(pop_xml) #:nodoc:
-            pop_xml = Nokogiri::XML(pop_xml).css('pop').first if pop_xml.is_a? String
-            QueuePop.new(
-              :queue_name => pop_xml['queue_name'],
-              :popped_products_count => pop_xml['popped_products_count'].to_i,
-              :created_at => pop_xml['created_at'],
-              :products_xmls => pop_xml.css('Product')
-            )
+            @xml = attributes[:xml]
+            @created_at = Time.parse(attributes[:created_at]) rescue nil
+            @onix = Elibri::ONIX::Release_3_0::ONIXMessage.from_xml(@xml) if @xml.present?
           end
 
         end

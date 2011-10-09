@@ -14,8 +14,9 @@ module Elibri
         # debug_output $stderr
         #++
 
-        def initialize(host_uri, login, password) #:nodoc:
+        def initialize(host_uri, login, password, onix_dialect) #:nodoc:
           @host_uri = host_uri
+          @onix_dialect = onix_dialect
           @auth = {:username => login, :password => password}
         end
 
@@ -73,20 +74,30 @@ module Elibri
         end
 
 
-        # Options moze przyjac {:testing => 1, :count => 100}
-        def pop_from_queue(queue_name, options = {})
-          options[:testing] = 1 if options[:testing]
-          options = ' ' if options.empty?
-          response = post "/queues/#{queue_name}/pop", :body => options
-          pop_xml = response.parsed_response.css('pop').first
-          Elibri::ApiClient::ApiAdapters::V1::QueuePop.build_from_xml(pop_xml)
+        # params moze przyjac {:testing => 1, :count => 100}
+        def pop_from_queue(queue_name, params = {})
+          params[:testing] = 1 if params[:testing]
+          params = ' ' if params.empty?
+          response = post "/queues/#{queue_name}/pop", :body => params, :headers => {"X-eLibri-API-ONIX-dialect" => @onix_dialect}
+
+          return nil unless response.headers["x-elibri-api-pop-products-count"].to_i > 0
+          Elibri::ApiClient::ApiAdapters::V1::QueuePop.new(
+            :queue_name => response.headers["x-elibri-api-pop-queue-name"],
+            :popped_products_count => response.headers["x-elibri-api-pop-products-count"],
+            :created_at => response.headers["x-elibri-api-pop-created-at"],
+            :xml => response.body
+          )
         end
 
 
         def last_pop_from_queue(queue_name)
-          response = get "/queues/#{queue_name}/last_pop"
-          pop_xml = response.parsed_response.css('pop').first
-          Elibri::ApiClient::ApiAdapters::V1::QueuePop.build_from_xml(pop_xml)
+          response = get "/queues/#{queue_name}/last_pop", :headers => {"X-eLibri-API-ONIX-dialect" => @onix_dialect}
+          Elibri::ApiClient::ApiAdapters::V1::QueuePop.new(
+            :queue_name => response.headers["x-elibri-api-pop-queue-name"],
+            :popped_products_count => response.headers["x-elibri-api-pop-products-count"],
+            :created_at => response.headers["x-elibri-api-pop-created-at"],
+            :xml => response.body
+          )
         rescue Exceptions::NoRecentlyPoppedData # Ignoruj bledy o braku ostatnich POPow.
           return nil
         end
@@ -109,7 +120,7 @@ module Elibri
         # Zwroc ONIX dla konkretnego produktu.
         def onix_xml_for_product(product) #:nodoc:
           raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Product instance' unless product.kind_of? Elibri::ApiClient::ApiAdapters::V1::Product
-          resp = get "/products/#{product.record_reference}"
+          resp = get "/products/#{product.record_reference}", :headers => {"X-eLibri-API-ONIX-dialect" => @onix_dialect}
           resp.parsed_response.css('Product').first
         end
 

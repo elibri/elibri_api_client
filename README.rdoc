@@ -4,7 +4,7 @@
   gem 'elibri_api_client'
 
 === 1. Tworzymy instancje klienta
-  elibri = Elibri::ApiClient.new(:login => '1b20fa9d72234423979c', :password => '2847cbf4f15a4057e2ab')
+  elibri = Elibri::ApiClient.new(:login => '1b20fa9d72234423979c', :password => '2847cbf4f15a4057e2ab', :api_version => 'v1', :onix_dialect => '3.0.1')
   
 === 2. Przegladanie dostepnych danych
 
@@ -24,16 +24,15 @@
 
   # Wypelnij wszystkie kolejki oczekujace, wszystkimi dostepnymi danymi.
   # Przydatne przy wykonywaniu pelnej synchronizacji pomiedzy nasza aplikacja a Elibri.
-  # Inna mozliwosc to iteracja elibri.publishers i sekwencyjne pobieranie danych kolejnych
-  # produktow (moze byc wolniejsze od kolejek zmian).
-  # elibri.refill_all_queues!
+  elibri.refill_all_queues!
 
   elibri.pending_queues.each do |pending_queue|
-    pending_queue.each_product do |product_xml|
-      # Otrzymujemy przeparsowany XML za pomoca Nokogiri
-      # product_xml.class => Nokogiri::XML::Element
-
-      puts product_xml.css('RecordReference').text
+    # Wykonuj blok, dopoki sa dane w kolejce
+    pending_queue.each_pop(:count => 10) do |pop|
+      puts pop.onix.release
+      pop.onix.products.each do |product|
+      	puts "#{product.record_reference} #{product.isbn13} #{product.publisher.name} #{product.full_title}"
+      end
     end
   end
 
@@ -42,12 +41,14 @@
   meta = elibri.pending_queues.find {|queue| queue.name == 'meta'}
 
   pop = meta.pop(:count => 5, :testing => true)
-  pop.each_product {|product_xml| puts product_xml.css('RecordReference').text }
+  pop.onix.products.each {|product| puts product.full_title }
+  puts pop.xml
 
   last_pop = meta.last_pop
 
 
 ==== 3c. Znadz ostatnio pobrane kolejki
+
   last_pop = elibri.last_pop_from_queue('meta')
 
 
