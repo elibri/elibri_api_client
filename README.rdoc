@@ -29,6 +29,7 @@
   elibri.pending_queues.each do |pending_queue|
     # Wykonuj blok, dopoki sa dane w kolejce
     pending_queue.each_pop(:count => 10) do |pop|
+      next if pop.xml.blank?
       puts pop.onix.release
       pop.onix.products.each do |product|
       	puts "#{product.record_reference} #{product.isbn13} #{product.publisher.name} #{product.full_title}"
