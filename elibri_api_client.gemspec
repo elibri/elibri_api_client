@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{elibri_api_client}
-  s.version = "1.1.1"
+  s.version = "1.1.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Marcin Urba\305\204ski"]
-  s.date = %q{2011-10-09}
+  s.date = %q{2011-10-11}
   s.description = %q{API client for elibri.com.pl publishing system}
   s.email = %q{marcin@urbanski.vdl.pl}
   s.extra_rdoc_files = [
