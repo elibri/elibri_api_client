@@ -29,7 +29,7 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
 
 
   it "should define several exception classes" do
-    exception_classes = %w{Unauthorized NotFound Forbidden ServerError QueueDoesNotExists NoRecentlyPoppedData InvalidOnixDialect}
+    exception_classes = %w{NotFound Forbidden ServerError InvalidLoginOrPassword QueueDoesNotExists NoRecentlyPoppedData InvalidOnixDialect}
     exception_classes.each do |exception_class|
       assert(Elibri::ApiClient::ApiAdapters::V1::Exceptions.const_get(exception_class) < RuntimeError)
     end  
@@ -120,6 +120,7 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
         '404' =>  Elibri::ApiClient::ApiAdapters::V1::Exceptions::NotFound,
         '403' =>  Elibri::ApiClient::ApiAdapters::V1::Exceptions::Forbidden,
         '500' =>  Elibri::ApiClient::ApiAdapters::V1::Exceptions::ServerError,
+        '1000' => Elibri::ApiClient::ApiAdapters::V1::Exceptions::InvalidLoginOrPassword,
         '1001' => Elibri::ApiClient::ApiAdapters::V1::Exceptions::QueueDoesNotExists,
         '1002' => Elibri::ApiClient::ApiAdapters::V1::Exceptions::NoRecentlyPoppedData,
         '1003' => Elibri::ApiClient::ApiAdapters::V1::Exceptions::InvalidOnixDialect,
@@ -136,10 +137,15 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
     end
 
 
-    it "should raise Unauthorized, when there is 401 response code" do
-      response_stub = stub('response_stub', :code => 401, :parsed_response => nil)
+    it "should raise InvalidLoginOrPassword, when there is 401 response code" do
+      parsed_response = Nokogiri::XML(<<-XML)
+        <error id="1000">
+          <message>Invalid login or password</message>
+        </error>
+      XML
+      response_stub = stub('response_stub', :code => 401, :parsed_response => parsed_response)
       get_request_expected("#{FAKE_API_HOST}/api/v1/queues").once.returns(response_stub)
-      assert_raises(Elibri::ApiClient::ApiAdapters::V1::Exceptions::Unauthorized) { @adapter.pending_queues }
+      assert_raises(Elibri::ApiClient::ApiAdapters::V1::Exceptions::InvalidLoginOrPassword) { @adapter.pending_queues }
     end
 
 

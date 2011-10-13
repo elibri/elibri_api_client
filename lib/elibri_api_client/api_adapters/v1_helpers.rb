@@ -9,10 +9,10 @@ module Elibri #:nodoc:
 
         module Exceptions #:nodoc:all
           class UnknownError < RuntimeError; end
-          class Unauthorized < RuntimeError; end
           class NotFound < RuntimeError; end
           class Forbidden < RuntimeError; end
           class ServerError < RuntimeError; end
+          class InvalidLoginOrPassword < RuntimeError; end
           class QueueDoesNotExists < RuntimeError; end
           class NoRecentlyPoppedData < RuntimeError; end
           class InvalidOnixDialect < RuntimeError; end
@@ -27,6 +27,7 @@ module Elibri #:nodoc:
           '404' =>  Exceptions::NotFound,
           '403' =>  Exceptions::Forbidden,
           '500' =>  Exceptions::ServerError,
+          '1000' => Exceptions::InvalidLoginOrPassword,
           '1001' => Exceptions::QueueDoesNotExists,
           '1002' => Exceptions::NoRecentlyPoppedData,
           '1003' => Exceptions::InvalidOnixDialect,

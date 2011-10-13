@@ -166,8 +166,6 @@ module Elibri
 
           # Jesli Elibri zwoci jakis blad, to rzucamy odpowiednim wyjatkiem.
           def raise_if_error_present_in(response)
-            raise Exceptions::Unauthorized, 'Bad login or password' if response.code == 401
-
             response_xml = response.parsed_response
             if response_xml && !response_xml.css('error').empty?
               error_id = response_xml.css('error').first['id']
