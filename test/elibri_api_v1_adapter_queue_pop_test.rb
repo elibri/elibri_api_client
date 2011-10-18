@@ -5,22 +5,22 @@ require 'helper'
 describe Elibri::ApiClient::ApiAdapters::V1::QueuePop do
 
   before do
-    @xml = <<-XML.strip_heredoc
-      <?xml version="1.0" encoding="UTF-8"?>
-      <ONIXMessage release="3.0" xmlns:elibri="http://elibri.com.pl/ns/extensions" xmlns="http://www.editeur.org/onix/3.0/reference">
-        <elibri:Dialect>3.0.1</elibri:Dialect>
-        <Header>
-          <Sender>
-            <SenderName>Elibri.com.pl</SenderName>
-            <ContactName>Tomasz Meka</ContactName>
-            <EmailAddress>kontakt@elibri.com.pl</EmailAddress>
-          </Sender>
-          <SentDateTime>20111009</SentDateTime>
-        </Header>
-        <Product>
-          <RecordReference>fdb8fa072be774d97a97</RecordReference>
-        </Product>
-      </ONIXMessage>
+    @xml = <<-XML
+<?xml version="1.0" encoding="UTF-8"?>
+<ONIXMessage release="3.0" xmlns:elibri="http://elibri.com.pl/ns/extensions" xmlns="http://www.editeur.org/onix/3.0/reference">
+  <elibri:Dialect>3.0.1</elibri:Dialect>
+  <Header>
+    <Sender>
+      <SenderName>Elibri.com.pl</SenderName>
+      <ContactName>Tomasz Meka</ContactName>
+      <EmailAddress>kontakt@elibri.com.pl</EmailAddress>
+    </Sender>
+    <SentDateTime>20111009</SentDateTime>
+  </Header>
+  <Product>
+    <RecordReference>fdb8fa072be774d97a97</RecordReference>
+  </Product>
+</ONIXMessage>
     XML
   end
 
