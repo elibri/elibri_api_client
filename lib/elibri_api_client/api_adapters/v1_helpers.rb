@@ -108,6 +108,12 @@ module Elibri #:nodoc:
             @onix = Elibri::ONIX::Release_3_0::ONIXMessage.from_xml(@xml) if @xml.present?
           end
 
+          def inspect
+            attributes_as_nice_string = [:queue_name, :popped_products_count, :onix].collect { |name|
+             "#{name}: #{"#{self.send(name).to_s[0..50]}...".inspect}"
+            }.compact.join(", ")
+            "#<#{self.class} #{attributes_as_nice_string}>"
+          end
         end
 
 
