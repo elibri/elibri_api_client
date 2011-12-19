@@ -259,9 +259,11 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
           </Header>
           <Product>
             <RecordReference>fdb8fa072be774d97a97</RecordReference>
+            <NotificationType>01</NotificationType>
           </Product>
           <Product>
             <RecordReference>6de1bed2f70a8cdae200</RecordReference>
+            <NotificationType>01</NotificationType>
           </Product>
         </ONIXMessage>
       XML
@@ -361,9 +363,11 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
             </Header>
             <Product>
               <RecordReference>fdb8fa072be774d97a97</RecordReference>
+              <NotificationType>01</NotificationType>
             </Product>
             <Product>
               <RecordReference>6de1bed2f70a8cdae200</RecordReference>
+              <NotificationType>01</NotificationType>
             </Product>
           </ONIXMessage>
         XML

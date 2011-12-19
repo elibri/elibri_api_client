@@ -19,6 +19,7 @@ describe Elibri::ApiClient::ApiAdapters::V1::QueuePop do
   </Header>
   <Product>
     <RecordReference>fdb8fa072be774d97a97</RecordReference>
+    <NotificationType>01</NotificationType>
   </Product>
 </ONIXMessage>
     XML
