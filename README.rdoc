@@ -1,5 +1,8 @@
 = Klient API serwisu elibri.com.pl
 
+=== Status testów:
+{<img src="https://secure.travis-ci.org/elibri/elibri_api_client.png?branch=master" alt="Build Status" />}[http://travis-ci.org/elibri/elibri_api_client]
+
 === 0. Gemfile dla Bundlera
   gem 'elibri_api_client'
 
