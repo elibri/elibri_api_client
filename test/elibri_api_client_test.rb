@@ -18,7 +18,8 @@ end
 describe Elibri::ApiClient do
 
   it "should be able to establish its version" do
-    assert_match /\d+\.\d+\.\d+/, Elibri::ApiClient::Version::STRING
+    assert_match /\d+\.\d+\.\d+/, Elibri::ApiClient::VERSION
+    assert_match /\d+\.\d+\.\d+/, Elibri::ApiClient::Version
   end
 
 

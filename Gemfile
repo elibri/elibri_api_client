@@ -1,15 +1,4 @@
-source "http://rubygems.org"
+source 'https://rubygems.org'
 
-gem "httparty", "= 0.8.1"
-gem "nokogiri", "~> 1.5.0"
-gem 'activesupport', '>= 2.3.5'
-gem 'elibri_onix', '>= 0.1.11'
-
-group :development do
-  gem "pry"
-  gem "mocha"
-  gem "minitest", ">= 0"
-  gem "bundler"
-  gem "jeweler", "~> 1.6.2"
-  gem "rcov", ">= 0"
-end
+# Specify your gem's dependencies in elibri_api_client.gemspec
+gemspec
