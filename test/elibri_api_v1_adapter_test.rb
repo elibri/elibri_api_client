@@ -246,7 +246,7 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
   describe "when asked to pop data from specified queue name" do
 
     before do
-      @xml = <<-XML
+      @xml = <<-XML.strip_heredoc
         <?xml version="1.0" encoding="UTF-8"?>
         <ONIXMessage release="3.0" xmlns:elibri="http://elibri.com.pl/ns/extensions" xmlns="http://www.editeur.org/onix/3.0/reference">
           <elibri:Dialect>3.0.1</elibri:Dialect>
@@ -350,7 +350,7 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
     describe "and there was a pop" do
 
       before do
-        @xml = <<-XML
+        @xml = <<-XML.strip_heredoc
           <?xml version="1.0" encoding="UTF-8"?>
           <ONIXMessage release="3.0" xmlns:elibri="http://elibri.com.pl/ns/extensions" xmlns="http://www.editeur.org/onix/3.0/reference">
             <elibri:Dialect>3.0.1</elibri:Dialect>
