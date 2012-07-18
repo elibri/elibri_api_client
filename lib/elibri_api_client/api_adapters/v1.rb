@@ -74,7 +74,7 @@ module Elibri
         end
 
         def remove_from_queue(queue_name, record_reference)
-          resp = post "/queues/#{queue_name}/remove/#{record_reference}"
+          resp = post "/queues/#{queue_name}/remove/#{record_reference}", :body => ' '
           return true
         end
 
