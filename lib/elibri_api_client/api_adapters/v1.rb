@@ -73,8 +73,12 @@ module Elibri
           end
         end
 
+        def remove_from_queue(queue_name, record_reference)
+          resp = post "/queues/#{queue_name}/remove/#{record_reference}"
+          return true
+        end
 
-        # params moze przyjac {:testing => 1, :count => 100}
+        # params moze przyjac {:testing => 1, :count => 100, :offset => 100 (tylko przy testing=1)}
         def pop_from_queue(queue_name, params = {})
           params[:testing] = 1 if params[:testing]
           params = ' ' if params.empty?
