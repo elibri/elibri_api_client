@@ -44,7 +44,8 @@ module Elibri
 
 
     # Metody API delegujemy do odpowiedniego adaptera:
-    def_delegators :@api_adapter, :refill_all_queues!, :pending_data?, :pending_queues, :publishers, :last_pop_from_queue, :pop_from_queue, :remove_from_queue
+    def_delegators :@api_adapter, :refill_all_queues!, :pending_data?, :pending_queues, :publishers, :last_pop_from_queue, :pop_from_queue, 
+                                  :remove_from_queue, :onix_xml_for_product
 
   end
 end

@@ -22,7 +22,7 @@ Gem::Specification.new do |gem|
     "README.rdoc"
   ]
   
-  gem.add_runtime_dependency "httparty", "= 0.8.1"
+  gem.add_runtime_dependency "httparty", ">= 0.8.1"
   gem.add_runtime_dependency "nokogiri", "~> 1.5.0"
   gem.add_runtime_dependency 'activesupport', '>= 2.3.5'
   gem.add_runtime_dependency 'elibri_onix', '>= 0.1.11'
