@@ -122,9 +122,13 @@ module Elibri
 
 
         # Zwroc ONIX dla konkretnego produktu.
-        def onix_xml_for_product(product) #:nodoc:
-          raise 'Need a Elibri::ApiClient::ApiAdapters::V1::Product instance' unless product.kind_of? Elibri::ApiClient::ApiAdapters::V1::Product
-          resp = get "/products/#{product.record_reference}", :headers => {"X-eLibri-API-ONIX-dialect" => @onix_dialect}
+        def onix_xml_for_product(product_or_rr) #:nodoc:
+          if product_or_rr.kind_of? Elibri::ApiClient::ApiAdapters::V1::Product
+            rr = product_or_rr.record_reference
+          else
+            rr = product_or_rr
+          end
+          resp = get "/products/#{rr}", :headers => {"X-eLibri-API-ONIX-dialect" => @onix_dialect}
           resp.parsed_response.css('Product').first
         end
 
