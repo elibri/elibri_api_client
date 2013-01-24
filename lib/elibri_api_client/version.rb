@@ -1,6 +1,9 @@
 module Elibri
   class ApiClient
-    VERSION = "1.1.12"
+    z = $VERBOSE
+    $VERBOSE = nil
+    VERSION = "1.1.13"
     Version = VERSION
+    $VERBOSE = z
   end
 end

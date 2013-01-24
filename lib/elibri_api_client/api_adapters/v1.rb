@@ -120,7 +120,6 @@ module Elibri
           end
         end
 
-
         # Zwroc ONIX dla konkretnego produktu.
         def onix_xml_for_product(product_or_rr) #:nodoc:
           if product_or_rr.kind_of? Elibri::ApiClient::ApiAdapters::V1::Product
@@ -130,6 +129,10 @@ module Elibri
           end
           resp = get "/products/#{rr}", :headers => {"X-eLibri-API-ONIX-dialect" => @onix_dialect}
           resp.parsed_response.css('Product').first
+        end
+
+        def get_product(product_or_rr)
+          Elibri::ONIX::Release_3_0::Product.new(onix_xml_for_product(product_or_rr))
         end
 
 

@@ -105,7 +105,7 @@ module Elibri #:nodoc:
             @popped_products_count = attributes[:popped_products_count].to_i
             @xml = attributes[:xml]
             @created_at = Time.parse(attributes[:created_at]) rescue nil
-            @onix = Elibri::ONIX::Release_3_0::ONIXMessage.from_xml(@xml) if @xml.present?
+            @onix = Elibri::ONIX::Release_3_0::ONIXMessage.new(@xml) if @xml.present?
           end
 
           def inspect
