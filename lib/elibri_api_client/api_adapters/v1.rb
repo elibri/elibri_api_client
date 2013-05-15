@@ -78,6 +78,11 @@ module Elibri
           return true
         end
 
+        def add_to_queue(queue_name, record_reference)
+          resp = post "/queues/#{queue_name}/add/#{record_reference}", :body => ' '
+          return true
+        end
+
         # params moze przyjac {:testing => 1, :count => 100, :offset => 100 (tylko przy testing=1)}
         def pop_from_queue(queue_name, params = {})
           params[:testing] = 1 if params[:testing]
