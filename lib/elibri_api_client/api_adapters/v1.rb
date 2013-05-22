@@ -63,15 +63,17 @@ module Elibri
         #   publishers -> array
         #
         def publishers
-          resp = get '/publishers'
-
-          Array.new.tap do |publishers|
-            resp.parsed_response.css('publisher').each do |publisher_xml|
-              publisher = Elibri::ApiClient::ApiAdapters::V1::Publisher.build_from_xml(self, publisher_xml)
-              publishers << publisher
-            end  
-          end
+          get_publishers_from_url('/publishers')
         end
+
+        def pdw_publishers
+          get_publishers_from_url('/publishers/pdw')
+        end
+
+        def olesiejuk_publishers
+          get_publishers_from_url('/publishers/olesiejuk')
+        end
+
 
         def remove_from_queue(queue_name, record_reference)
           resp = post "/queues/#{queue_name}/remove/#{record_reference}", :body => ' '
@@ -154,6 +156,17 @@ module Elibri
           # http://www.elibri.com.pl:80/api/v1
           def full_api_uri
             @host_uri + URI_PREFIX 
+          end
+
+          def get_publishers_from_url(url)
+            resp = get(url)
+
+            Array.new.tap do |publishers|
+              resp.parsed_response.css('publisher').each do |publisher_xml|
+                publisher = Elibri::ApiClient::ApiAdapters::V1::Publisher.build_from_xml(self, publisher_xml)
+                publishers << publisher
+              end
+            end
           end
 
 
