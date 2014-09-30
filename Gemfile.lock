@@ -5,7 +5,7 @@ PATH
       activesupport (>= 2.3.5)
       elibri_onix (>= 0.1.11)
       httparty (>= 0.8.1)
-      nokogiri
+      nokogiri (>= 1.5.0)
 
 GEM
   remote: https://rubygems.org/
@@ -62,7 +62,7 @@ PLATFORMS
 DEPENDENCIES
   bundler
   elibri_api_client!
-  jeweler (~> 1.6.2)
+  jeweler (>= 1.6.2)
   minitest
   mocha
   pry
