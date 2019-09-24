@@ -74,6 +74,10 @@ module Elibri
           get_publishers_from_url('/publishers/olesiejuk')
         end
 
+        def virtualo_publishers
+          get_publishers_from_url('/publishers/virtualo')
+        end
+
 
         def remove_from_queue(queue_name, record_reference)
           resp = post "/queues/#{queue_name}/remove/#{record_reference}", :body => ' '
