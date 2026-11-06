@@ -178,7 +178,7 @@ module Elibri
             options.merge!({:digest_auth => @auth})
             request_uri = normalise_request_uri(request_uri)
 
-            response = self.class.get(request_uri, options)
+            response = perform_request(:get, request_uri, options)
             raise_if_error_present_in response
             response
           end
@@ -188,9 +188,23 @@ module Elibri
             options.merge!({:digest_auth => @auth})
             request_uri = normalise_request_uri(request_uri)
 
-            response = self.class.post(request_uri, options)
+            response = perform_request(:post, request_uri, options)
             raise_if_error_present_in response
             response
+          end
+
+
+          # Network-level failures that mean Elibri can't be reached right now.
+          NETWORK_ERRORS = [
+            Errno::EHOSTUNREACH, Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT,
+            Net::OpenTimeout, Net::ReadTimeout, SocketError, OpenSSL::SSL::SSLError
+          ].freeze
+
+          # Wraps network errors in Exceptions::UpstreamUnavailable; the original is kept as #cause.
+          def perform_request(http_method, request_uri, options)
+            self.class.send(http_method, request_uri, options)
+          rescue *NETWORK_ERRORS => e
+            raise Exceptions::UpstreamUnavailable, "ELIBRI_API UNAVAILABLE: #{e.class}: #{e.message}"
           end
 
 
@@ -208,7 +222,7 @@ module Elibri
           # Jesli Elibri zwoci jakis blad, to rzucamy odpowiednim wyjatkiem.
           def raise_if_error_present_in(response)
             response_xml = response.parsed_response
-            if response_xml && !response_xml.css('error').empty?
+            if response_xml.respond_to?(:css) && !response_xml.css('error').empty?
               error_id = response_xml.css('error').first['id']
               error_message = response_xml.css('error message').first.text
 
@@ -219,6 +233,13 @@ module Elibri
                 # Jakis nieznany blad - rzucamy chociaz stringiem
                 raise Exceptions::UnknownError, "ELIBRI_API ERROR #{error_id}: #{error_message}"
               end
+            end
+
+            # No Elibri XML error, but the response is unusable: a 5xx status (e.g. a 503 page from
+            # the load balancer) or a body that HTTParty did not parse as XML.
+            if response.code.to_i >= 500 || (response_xml && !response_xml.respond_to?(:css))
+              body_excerpt = response.body.to_s.gsub(/\s+/, ' ').strip[0, 200]
+              raise Exceptions::UpstreamUnavailable, "ELIBRI_API UNAVAILABLE: HTTP #{response.code}: #{body_excerpt}"
             end
           end
 

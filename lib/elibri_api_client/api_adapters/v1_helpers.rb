@@ -12,6 +12,9 @@ module Elibri #:nodoc:
           class NotFound < RuntimeError; end
           class Forbidden < RuntimeError; end
           class ServerError < RuntimeError; end
+          # Elibri is unreachable or answered with something other than API XML (e.g. a 503 page from
+          # the load balancer, a connection refused or a timeout). Safe to retry later.
+          class UpstreamUnavailable < ServerError; end
           class InvalidLoginOrPassword < RuntimeError; end
           class QueueDoesNotExists < RuntimeError; end
           class NoRecentlyPoppedData < RuntimeError; end
