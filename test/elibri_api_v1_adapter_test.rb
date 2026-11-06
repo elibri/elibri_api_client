@@ -155,7 +155,74 @@ describe Elibri::ApiClient::ApiAdapters::V1 do
       get_request_expected("#{FAKE_API_HOST}/api/v1/queues").once.returns(response_stub)
       assert_raises(Elibri::ApiClient::ApiAdapters::V1::Exceptions::UnknownError) { @adapter.pending_queues }
     end
-    
+
+  end
+
+
+  describe "when Elibri is unavailable" do
+
+    UPSTREAM_UNAVAILABLE = Elibri::ApiClient::ApiAdapters::V1::Exceptions::UpstreamUnavailable
+
+    it "should be a kind of ServerError" do
+      assert(UPSTREAM_UNAVAILABLE < Elibri::ApiClient::ApiAdapters::V1::Exceptions::ServerError)
+    end
+
+
+    it "should raise UpstreamUnavailable on 503 HTML page from load balancer" do
+      html = "<html><body><h1>503 Service Unavailable</h1>\nNo server is available to handle this request.\n</body></html>\n"
+      response_stub = stub('response_stub', :code => 503, :body => html, :parsed_response => html)
+      get_request_expected("#{FAKE_API_HOST}/api/v1/queues/meta/last_pop", :headers => {'X-eLibri-API-ONIX-dialect' => '3.0.1'}).once.returns(response_stub)
+
+      error = assert_raises(UPSTREAM_UNAVAILABLE) { @adapter.last_pop_from_queue('meta') }
+      assert_match(/HTTP 503/, error.message)
+      assert_match(/503 Service Unavailable/, error.message)
+    end
+
+
+    it "should raise UpstreamUnavailable on 5xx response with empty body" do
+      response_stub = stub('response_stub', :code => 502, :body => nil, :parsed_response => nil)
+      post_request_expected("#{FAKE_API_HOST}/api/v1/queues/meta/pop", :headers => {'X-eLibri-API-ONIX-dialect' => '3.0.1'}).once.returns(response_stub)
+
+      assert_raises(UPSTREAM_UNAVAILABLE) { @adapter.pop_from_queue('meta') }
+    end
+
+
+    it "should raise UpstreamUnavailable when response body is not XML" do
+      response_stub = stub('response_stub', :code => 200, :body => 'Maintenance', :parsed_response => 'Maintenance')
+      get_request_expected("#{FAKE_API_HOST}/api/v1/queues").once.returns(response_stub)
+
+      assert_raises(UPSTREAM_UNAVAILABLE) { @adapter.pending_queues }
+    end
+
+
+    it "should still raise specific exception when Elibri reports XML error with 5xx status" do
+      parsed_response = Nokogiri::XML(%q{<error id="500"><message>Internal error</message></error>})
+      response_stub = stub('response_stub', :code => 500, :parsed_response => parsed_response)
+      get_request_expected("#{FAKE_API_HOST}/api/v1/queues").once.returns(response_stub)
+
+      error = assert_raises(Elibri::ApiClient::ApiAdapters::V1::Exceptions::ServerError) { @adapter.pending_queues }
+      refute_kind_of UPSTREAM_UNAVAILABLE, error
+    end
+
+
+    it "should wrap connection failures in UpstreamUnavailable, keeping original as cause" do
+      get_request_expected("#{FAKE_API_HOST}/api/v1/queues/meta/last_pop", :headers => {'X-eLibri-API-ONIX-dialect' => '3.0.1'}).once.
+        raises(Errno::EHOSTUNREACH, 'Failed to open TCP connection to pl.t.elibri.com.pl:443')
+
+      error = assert_raises(UPSTREAM_UNAVAILABLE) { @adapter.last_pop_from_queue('meta') }
+      assert_kind_of Errno::EHOSTUNREACH, error.cause
+      assert_match(/EHOSTUNREACH/, error.message)
+    end
+
+
+    it "should wrap timeouts in UpstreamUnavailable" do
+      post_request_expected("#{FAKE_API_HOST}/api/v1/queues/meta/pop", :headers => {'X-eLibri-API-ONIX-dialect' => '3.0.1'}).once.
+        raises(Net::ReadTimeout)
+
+      error = assert_raises(UPSTREAM_UNAVAILABLE) { @adapter.pop_from_queue('meta') }
+      assert_kind_of Net::ReadTimeout, error.cause
+    end
+
   end
 
 
